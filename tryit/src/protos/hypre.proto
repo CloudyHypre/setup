@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package hypre;
+
+//specifies the callable methods
+service hypreSrv {
+
+}
+
+//request objects - ex5
+message RPC_HYPRE_IJMatrix {
+
+}
+
+message RPC_HYPRE_ParCSRMatrix {
+
+}
+
+message RPC_HYPRE_IJVector {
+
+}
+
+message RPC_HYPRE_ParVector {
+
+}
+
+message RPC_HYPRE_IJVector {
+
+}
+
+message RPC_HYPRE_ParVector {
+
+}
+
+message RPC_HYPRE_Solver {
+
+}

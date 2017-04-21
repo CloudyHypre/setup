@@ -4,10 +4,18 @@ package hypre;
 
 //specifies the callable methods
 service hypreSrv {
-
+    rpc RPC_HYPRE_BoomerAMGSolve (RPC_HYPRE_BoomerAMGSolve) returns (RPC_HYPRE_Solver) {}
 }
 
 //request objects - ex5
+message RPC_HYPRE_BoomerAMGSolve {
+    RPC_HYPRE_Solver solver = 1;
+    RPC_HYPRE_ParCSRMatrix parcsr_A = 2;
+    RPC_HYPRE_ParVector par_b = 3;
+    RPC_HYPRE_ParVector par_x = 4;
+}
+
+//helper objects
 message RPC_HYPRE_IJMatrix {
 
 }

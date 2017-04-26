@@ -168,14 +168,6 @@ message RPC_HYPRE_ParVector {
 
 }
 
-message RPC_HYPRE_IJVector {
-
-}
-
-message RPC_HYPRE_IJMatrix {
-
-}
-
 //
 //helper objects
 //
@@ -249,5 +241,33 @@ message RPC_HYPRE_IJAssumedPart {
     int32 row_start_list = 6;
     int32 row_end_list = 7;
     int32 sort_index = 8;
+
+}
+
+/*
+ * @file seq_mv.h
+ *
+ * typedef struct
+ * {
+ * } hypre_Vector;
+ */
+message RPC_HYPRE_Vector {
+
+    double data = 1;
+    int32 size = 2;
+
+    /* Does the Vector create/destroy `data'? */
+    int32 owns_data = 3;
+
+    /* For multivectors...*/
+    int32 num_vectors = 4;  /* the above "size" is size of one vector */
+    int32 multivec_storage_method = 5;
+    /* ...if 0, store colwise v0[0], v0[1], ..., v1[0], v1[1], ... v2[0]... */
+    /* ...if 1, store rowwise v0[0], v1[0], ..., v0[1], v1[1], ... */
+    /* With colwise storage, vj[i] = data[ j*size + i]
+       With rowwise storage, vj[i] = data[ j + num_vectors*i] */
+    int32 vecstride = 6;
+    int32 idxstride = 7;
+    /* ... so vj[i] = data[ j*vecstride + i*idxstride ] regardless of row_storage.*/
 
 }

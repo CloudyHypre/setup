@@ -17,12 +17,18 @@
                  preconditioners.  */
 
 #include <math.h>
+
 #include "_hypre_utilities.h"
 #include "HYPRE_krylov.h"
 #include "HYPRE.h"
 #include "HYPRE_parcsr_ls.h"
-
 #include "vis.c"
+
+#include "../../../hypre/src/utilities/_hypre_utilities.h"
+#include "../../../hypre/src/krylov/HYPRE_krylov.h"
+#include "../../../hypre/src/HYPRE.h"
+#include "../../../hypre/src/parcsr_ls/HYPRE_parcsr_ls.h"
+#include "../../../hypre/src/examples/vis.c"
 
 int hypre_FlexGMRESModifyPCAMGExample(void *precond_data, int iterations,
                                       double rel_residual_norm);

@@ -1,45 +1,253 @@
 syntax = "proto3";
 
-package hypre;
+package rpc_hypre;
 
 //specifies the callable methods
 service hypreSrv {
-    rpc RPC_HYPRE_BoomerAMGSolve (RPC_HYPRE_BoomerAMGSolve) returns (RPC_HYPRE_Solver) {}
+
+    //create solver line 315
+    rpc RPC_HYPRE_BoomerAMGCreate (null) returns (RPC_HYPRE_Solver) {}
+
+    //some parameters line 318
+    rpc RPC_HYPRE_BoomerAMGSetPrintLevel (RPC_HYPRE_GenericSolverIntegerParam) returns (null) {}
+    rpc RPC_HYPRE_BoomerAMGSetOldDefault (RPC_HYPRE_Solver) returns (null) {}
+    rpc RPC_HYPRE_BoomerAMGSetRelaxType (RPC_HYPRE_GenericSolverIntegerParam) returns (null) {}
+    rpc RPC_HYPRE_BoomerAMGSetRelaxOrder (RPC_HYPRE_GenericSolverIntegerParam) returns (null) {}
+    rpc RPC_HYPRE_BoomerAMGSetNumSweeps (RPC_HYPRE_GenericSolverIntegerParam) returns (null) {}
+    rpc RPC_HYPRE_BoomerAMGSetMaxLevels (RPC_HYPRE_GenericSolverIntegerParam) returns (null) {}
+    rpc RPC_HYPRE_BoomerAMGSetTol (RPC_HYPRE_GenericSolverDoubleParam) returns (null) {}
+
+    //setup and solve line 326
+    rpc RPC_HYPRE_BoomerAMGSetup (RPC_HYPRE_BoomerAMGSolve) returns (null) {}
+    rpc RPC_HYPRE_BoomerAMGSolve (RPC_HYPRE_BoomerAMGSolve) returns (RPC_HYPRE_ParVector) {}
+
+    //run info line 330
+    rpc RPC_HYPRE_BoomerAMGGetNumIterations (RPC_HYPRE_Solver) returns (num_iterations) {}
+    rpc RPC_HYPRE_BoomerAMGGetFinalRelativeResidualNorm (RPC_HYPRE_Solver) returns (final_res_norm) {}
+
 }
 
-//request objects - ex5
+//
+//request objects (ex5)
+//
+
+/*
+ * generic integer param, always add the solver to have a context
+ */
+message RPC_HYPRE_GenericSolverIntegerParam {
+
+    RPC_HYPRE_Solver solver = 1;
+    int32 value = 2;
+
+}
+
+/*
+ * generic double param, always add the solver to have a context
+ */
+message RPC_HYPRE_GenericSolverDoubleParam {
+
+    RPC_HYPRE_Solver solver = 1;
+    double value = 2;
+
+}
+
+/*
+ * request object for RPC_HYPRE_BoomerAMGSolve()
+ */
 message RPC_HYPRE_BoomerAMGSolve {
+
     RPC_HYPRE_Solver solver = 1;
     RPC_HYPRE_ParCSRMatrix parcsr_A = 2;
     RPC_HYPRE_ParVector par_b = 3;
     RPC_HYPRE_ParVector par_x = 4;
+
 }
 
-//helper objects
+//
+//parameter objects
+//
+
+/*
+ * maybe we can skip sending the solver as an actual object and just hold it on server side
+ * we can use an id to identify it from client
+ */
+message RPC_HYPRE_Solver {
+
+    int32 identifier = 1;
+
+}
+
+/*
+ * @file _hypre_parcsr_mv.h
+ *
+ * typedef struct hypre_ParCSRMatrix_struct
+ * {
+ *
+ * } hypre_ParCSRMatrix;
+ */
+message RPC_HYPRE_ParCSRMatrix {
+
+    //MPI_Comm comm;
+
+    int32 global_num_rows = 1;
+    int32 global_num_cols = 2;
+    int32 first_row_index = 3;
+    int32 first_col_diag = 4;
+
+    // need to know entire local range in case row_starts and col_starts are null  (i.e., bgl) AHB 6/05
+    int32 last_row_index = 5;
+    int32 last_col_diag = 6;
+
+    RPC_HYPRE_CSRMatrix diag = 7;
+    RPC_HYPRE_CSRMatrix offd = 8;
+    RPC_HYPRE_CSRMatrix diagT = 9;
+    RPC_HYPRE_CSRMatrix offdT = 10;
+
+    // JSP: transposed matrices are created lazily and optional
+    int32 col_map_offd = 11;
+
+    // maps columns of offd to global columns
+    int32 row_starts = 12;
+
+    // array of length num_procs+1, row_starts[i] contains the global number of the first row on proc i,
+    //first_row_index = row_starts[my_id], row_starts[num_procs] = global_num_rows
+    int32 col_starts = 13;
+
+    // array of length num_procs+1, col_starts[i] contains the global number of the first column of diag on proc i,
+    //first_col_diag = col_starts[my_id], col_starts[num_procs] = global_num_cols
+
+    RPC_HYPRE_ParCSRCommPkg comm_pkg = 14;
+    RPC_HYPRE_ParCSRCommPkg comm_pkgT = 15;
+
+    // Does the ParCSRMatrix create/destroy `diag', `offd', `col_map_offd'?
+    int32 owns_data = 16;
+    // Does the ParCSRMatrix create/destroy `row_starts', `col_starts'?
+    int32 owns_row_starts = 17;
+    int32 owns_col_starts = 18;
+
+    int32 num_nonzeros = 19;
+    double d_num_nonzeros = 20;
+
+    // Buffers used by GetRow to hold row currently being accessed. AJC, 4/99
+    int32 rowindices = 21;
+    double rowvalues = 22;
+    int32 getrowactive = 23;
+
+    RPC_HYPRE_IJAssumedPart assumed_partition = 24;
+    // only populated if no_global_partition option is used (compile-time option)
+
+}
+
+/*
+ * @file seq_mv.h
+ *
+ * typedef struct
+ * {
+ * } hypre_Vector;
+ */
+message RPC_HYPRE_ParVector {
+
+    //MPI_Comm	 comm;
+
+    int32 global_size = 1;
+    int32 first_index = 2;
+    int32 last_index = 3;
+    int32 partitioning = 4;
+    int32 actual_local_size = 5; /* stores actual length of data in local vector
+			to allow memory manipulations for temporary vectors*/
+    hypre_Vector local_vector = 6;
+
+    /* Does the Vector create/destroy `data'? */
+    int32 owns_data = 7;
+    int32 owns_partitioning = 8;
+
+    RPC_HYPRE_IJAssumedPart assumed_partition = 9; /* only populated if no_global_partition option
+                                              is used (compile-time option) AND this partition
+                                              needed
+                                              (for setting off-proc elements, for example)*/
+
+}
+
+message RPC_HYPRE_IJVector {
+
+}
+
 message RPC_HYPRE_IJMatrix {
 
 }
 
-message RPC_HYPRE_ParCSRMatrix {
+//
+//helper objects
+//
+
+/*
+ * @file seq_mv.h
+ *
+ * typedef struct
+ * {
+ * } hypre_CSRMatrix;
+ */
+message RPC_HYPRE_CSRMatrix {
+
+    int32 i = 1;
+    int32 j = 2;
+    int32 num_rows = 3;
+    int32 num_cols = 4;
+    int32 num_nonzeros = 5;
+
+    /* Does the CSRMatrix create/destroy `data', `i', `j'? */
+    int32 owns_data = 6;
+
+    double data = 7;
+
+    /* for compressing rows in matrix multiplication  */
+    int32 rownnz = 8;
+    int32 num_rownnz = 9;
 
 }
 
-message RPC_HYPRE_IJVector {
+/*
+ * @file _hypre_parcsr_mv.h
+ *
+ * typedef struct
+ * {
+ * } hypre_ParCSRCommPkg;
+ */
+message RPC_HYPRE_ParCSRCommPkg {
+
+    //MPI_Comm               comm;
+
+    int32 num_sends = 1;
+    int32 send_procs = 2;
+    int32 send_map_starts = 3;
+    int32 send_map_elmts = 4;
+
+    int32 num_recvs = 5;
+    int32 recv_procs = 6;
+    int32 recv_vec_starts = 7;
+
+    /* remote communication information */
+    //hypre_MPI_Datatype          *send_mpi_types;
+    //hypre_MPI_Datatype          *recv_mpi_types;
 
 }
 
-message RPC_HYPRE_ParVector {
+/*
+ * @file _hypre_parcsr_mv.h
+ *
+ * typedef struct
+ * {
+ * } hypre_IJAssumedPart;
+ */
+message RPC_HYPRE_IJAssumedPart {
 
-}
-
-message RPC_HYPRE_IJVector {
-
-}
-
-message RPC_HYPRE_ParVector {
-
-}
-
-message RPC_HYPRE_Solver {
+    int32 length = 1;
+    int32 row_start = 2;
+    int32 row_end = 3;
+    int32 storage_length = 4;
+    int32 proc_list = 5;
+    int32 row_start_list = 6;
+    int32 row_end_list = 7;
+    int32 sort_index = 8;
 
 }

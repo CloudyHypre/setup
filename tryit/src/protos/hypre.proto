@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package rpc_hypre;
 
+import "google/protobuf/empty.proto";
+
 /********************************* specifies the callable methods *********************************/
 service hypreSrv {
 
@@ -11,7 +13,7 @@ service hypreSrv {
     /* Create the matrix.
     Note that this is a square matrix, so we indicate the row partition
     size twice (since number of rows = number of cols) */
-    rpc RPC_HYPRE_IJMatrixCreate(RPC_HYPRE_IJMatrixCreate) returns (RPC_HYPRE_IJMatrix) {}
+    rpc RPC_HYPRE_IJMatrixCreate(RPC_HYPRE_IJMatrixCreateMessage) returns (RPC_HYPRE_IJMatrix) {}
 
     /* Choose a parallel csr format storage (see the User's Manual) */
     rpc RPC_HYPRE_IJMatrixSetObjectType(RPC_HYPRE_GenericMatrixIntegerParam) returns (RPC_HYPRE_IJMatrix) {}
@@ -19,51 +21,51 @@ service hypreSrv {
     /* Initialize before setting coefficients */
     rpc RPC_HYPRE_IJMatrixInitialize(RPC_HYPRE_IJMatrix) returns (RPC_HYPRE_IJMatrix) {}
 
-    rpc RPC_HYPRE_IJMatrixSetValues(RPC_HYPRE_IJMatrixSetValues) returns (RPC_HYPRE_IJMatrix) {}
+    rpc RPC_HYPRE_IJMatrixSetValues(RPC_HYPRE_IJMatrixSetValuesMessage) returns (RPC_HYPRE_IJMatrix) {}
     rpc RPC_HYPRE_IJMatrixAssemble(RPC_HYPRE_IJMatrix) returns (RPC_HYPRE_IJMatrix) {}
     rpc RPC_HYPRE_IJMatrixGetObject(RPC_HYPRE_GenericMatrixIntegerParam) returns (RPC_HYPRE_IJMatrix) {}
 
-    rpc RPC_HYPRE_IJMatrixDestroy(RPC_HYPRE_IJMatrix) returns (int32) {}
+    rpc RPC_HYPRE_IJMatrixDestroy(RPC_HYPRE_IJMatrix) returns (google.protobuf.Empty) {}
 
     /********************************* VECTOR *********************************/
     //@file HYPRE_IJ_mv.h
 
     /* Create the rhs and solution */
-    rpc RPC_HYPRE_IJVectorCreate(RPC_HYPRE_IJVectorCreate) returns (RPC_HYPRE_IJVector) {}
+    rpc RPC_HYPRE_IJVectorCreate(RPC_HYPRE_IJVectorCreateMessage) returns (RPC_HYPRE_IJVector) {}
     rpc RPC_HYPRE_IJVectorSetObjectType(RPC_HYPRE_GenericVectorxIntegerParam) returns (RPC_HYPRE_IJVector) {}
     rpc RPC_HYPRE_IJVectorInitialize(RPC_HYPRE_IJVector) returns (RPC_HYPRE_IJVector) {}
 
     /* Set the rhs values to h^2 and the solution to zero */
-    rpc RPC_HYPRE_IJVectorSetValues(RPC_HYPRE_IJVectorSetValues) returns (RPC_HYPRE_IJVector) {}
+    rpc RPC_HYPRE_IJVectorSetValues(RPC_HYPRE_IJVectorSetValuesMessage) returns (RPC_HYPRE_IJVector) {}
 
     rpc RPC_HYPRE_IJVectorAssemble(RPC_HYPRE_IJVector) returns (RPC_HYPRE_IJVector) {}
     rpc RPC_HYPRE_IJVectorGetObject(RPC_HYPRE_GenericVectorxIntegerParam) returns (RPC_HYPRE_IJVector) {}
 
-    rpc RPC_HYPRE_IJVectorDestroy(RPC_HYPRE_IJVector) returns (int32) {}
+    rpc RPC_HYPRE_IJVectorDestroy(RPC_HYPRE_IJVector) returns (google.protobuf.Empty) {}
 
     /********************************* BOOMER *********************************/
 
     //create solver line 315
-    rpc RPC_HYPRE_BoomerAMGCreate (null) returns (RPC_HYPRE_Solver) {}
+    rpc RPC_HYPRE_BoomerAMGCreate (google.protobuf.Empty) returns (RPC_HYPRE_Solver) {}
 
     //some parameters line 318
-    rpc RPC_HYPRE_BoomerAMGSetPrintLevel (RPC_HYPRE_GenericSolverIntegerParam) returns (null) {}
-    rpc RPC_HYPRE_BoomerAMGSetOldDefault (RPC_HYPRE_Solver) returns (null) {}
-    rpc RPC_HYPRE_BoomerAMGSetRelaxType (RPC_HYPRE_GenericSolverIntegerParam) returns (null) {}
-    rpc RPC_HYPRE_BoomerAMGSetRelaxOrder (RPC_HYPRE_GenericSolverIntegerParam) returns (null) {}
-    rpc RPC_HYPRE_BoomerAMGSetNumSweeps (RPC_HYPRE_GenericSolverIntegerParam) returns (null) {}
-    rpc RPC_HYPRE_BoomerAMGSetMaxLevels (RPC_HYPRE_GenericSolverIntegerParam) returns (null) {}
-    rpc RPC_HYPRE_BoomerAMGSetTol (RPC_HYPRE_GenericSolverDoubleParam) returns (null) {}
+    rpc RPC_HYPRE_BoomerAMGSetPrintLevel (RPC_HYPRE_GenericSolverIntegerParam) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetOldDefault (RPC_HYPRE_Solver) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetRelaxType (RPC_HYPRE_GenericSolverIntegerParam) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetRelaxOrder (RPC_HYPRE_GenericSolverIntegerParam) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetNumSweeps (RPC_HYPRE_GenericSolverIntegerParam) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetMaxLevels (RPC_HYPRE_GenericSolverIntegerParam) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetTol (RPC_HYPRE_GenericSolverDoubleParam) returns (google.protobuf.Empty) {}
 
     //setup and solve line 326
-    rpc RPC_HYPRE_BoomerAMGSetup (RPC_HYPRE_BoomerAMGSolve) returns (null) {}
-    rpc RPC_HYPRE_BoomerAMGSolve (RPC_HYPRE_BoomerAMGSolve) returns (RPC_HYPRE_ParVector) {}
+    rpc RPC_HYPRE_BoomerAMGSetup (RPC_HYPRE_BoomerAMGSolveMessage) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSolve (RPC_HYPRE_BoomerAMGSolveMessage) returns (RPC_HYPRE_ParVector) {}
 
     //run info line 330
-    rpc RPC_HYPRE_BoomerAMGGetNumIterations (RPC_HYPRE_Solver) returns (num_iterations) {}
-    rpc RPC_HYPRE_BoomerAMGGetFinalRelativeResidualNorm (RPC_HYPRE_Solver) returns (final_res_norm) {}
+    rpc RPC_HYPRE_BoomerAMGGetNumIterations (RPC_HYPRE_Solver) returns (RPC_HYPRE_INTEGER) {}
+    rpc RPC_HYPRE_BoomerAMGGetFinalRelativeResidualNorm (RPC_HYPRE_Solver) returns (RPC_HYPRE_DOUBLE) {}
 
-    rpc RPC_HYPRE_BoomerAMGDestroy (RPC_HYPRE_Solver) returns (int32) {}
+    rpc RPC_HYPRE_BoomerAMGDestroy (RPC_HYPRE_Solver) returns (google.protobuf.Empty) {}
 
 }
 
@@ -71,7 +73,7 @@ service hypreSrv {
 
 //@file HYPRE_IJ_mv.h
 
-message RPC_HYPRE_IJVectorCreate {
+message RPC_HYPRE_IJVectorCreateMessage {
 
     //    MPI_Comm        comm,
     int32 jlower = 1;
@@ -86,7 +88,7 @@ message RPC_HYPRE_GenericVectorxIntegerParam {
 
 }
 
-message RPC_HYPRE_IJVectorSetValues {
+message RPC_HYPRE_IJVectorSetValuesMessage {
 
     RPC_HYPRE_IJVector vector = 1;
     int32 nvalues = 2;
@@ -101,7 +103,7 @@ message RPC_HYPRE_IJVector {
 
 }
 
-message RPC_HYPRE_IJMatrixCreate {
+message RPC_HYPRE_IJMatrixCreateMessage {
 
 //    MPI_Comm        comm,
     int32 ilower = 1;
@@ -118,7 +120,7 @@ message RPC_HYPRE_GenericMatrixIntegerParam {
 
 }
 
-message RPC_HYPRE_IJMatrixSetValues {
+message RPC_HYPRE_IJMatrixSetValuesMessage {
 
     RPC_HYPRE_IJMatrix matrix = 1;
     int32 nrows = 2;
@@ -158,7 +160,7 @@ message RPC_HYPRE_GenericSolverDoubleParam {
 /*
  * request object for RPC_HYPRE_BoomerAMGSolve()
  */
-message RPC_HYPRE_BoomerAMGSolve {
+message RPC_HYPRE_BoomerAMGSolveMessage {
 
     RPC_HYPRE_Solver solver = 1;
     RPC_HYPRE_ParCSRMatrix parcsr_A = 2;
@@ -174,6 +176,26 @@ message RPC_HYPRE_BoomerAMGSolve {
 message RPC_HYPRE_Solver {
 
     int32 identifier = 1;
+
+}
+
+//basic types
+
+message RPC_HYPRE_INTEGER {
+
+    int32 value = 1;
+
+}
+
+message RPC_HYPRE_DOUBLE {
+
+    int32 value = 1;
+
+}
+
+message RPC_HYPRE_SUCCESS {
+
+    bool value = 1;
 
 }
 
@@ -257,7 +279,7 @@ message RPC_HYPRE_ParVector {
     int32 partitioning = 4;
     int32 actual_local_size = 5; /* stores actual length of data in local vector
 			to allow memory manipulations for temporary vectors*/
-    hypre_Vector local_vector = 6;
+    RPC_HYPRE_Vector local_vector = 6;
 
     /* Does the Vector create/destroy `data'? */
     int32 owns_data = 7;

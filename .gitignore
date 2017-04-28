@@ -3,3 +3,4 @@ hypre/
 cmake-build-debug
 .vagrant
 .idea
+*.pb.*

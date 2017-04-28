@@ -1,20 +1,3 @@
-/*
-   Example 5
-
-   Interface:    Linear-Algebraic (IJ)
-
-   Compile with: make ex5
-
-   Sample run:   mpirun -np 4 ex5
-
-   Description:  This example solves the 2-D Laplacian problem with zero boundary
-                 conditions on an n x n grid.  The number of unknowns is N=n^2.
-                 The standard 5-point stencil is used, and we solve for the
-                 interior nodes only.
-
-                 This example solves the same problem as Example 3.  Available
-                 solvers are AMG, PCG, and PCG with AMG or Parasails
-                 preconditioners.  */
 
 #include <math.h>
 
@@ -70,67 +53,67 @@ int main (int argc, char *argv[])
 
 
    /* Parse command line */
-   {
-      int arg_index = 0;
-      int print_usage = 0;
-
-      while (arg_index < argc)
-      {
-         if ( strcmp(argv[arg_index], "-n") == 0 )
-         {
-            arg_index++;
-            n = atoi(argv[arg_index++]);
-         }
-         else if ( strcmp(argv[arg_index], "-solver") == 0 )
-         {
-            arg_index++;
-            solver_id = atoi(argv[arg_index++]);
-         }
-         else if ( strcmp(argv[arg_index], "-vis") == 0 )
-         {
-            arg_index++;
-            vis = 1;
-         }
-         else if ( strcmp(argv[arg_index], "-print_system") == 0 )
-         {
-            arg_index++;
-            print_system = 1;
-         }
-         else if ( strcmp(argv[arg_index], "-help") == 0 )
-         {
-            print_usage = 1;
-            break;
-         }
-         else
-         {
-            arg_index++;
-         }
-      }
-
-      if ((print_usage) && (myid == 0))
-      {
-         printf("\n");
-         printf("Usage: %s [<options>]\n", argv[0]);
-         printf("\n");
-         printf("  -n <n>              : problem size in each direction (default: 33)\n");
-         printf("  -solver <ID>        : example only supporting default (0) for now\n");
-         printf("  -solver <ID>        : solver ID\n");
-         printf("                        0  - AMG (default) \n");
-         printf("                        1  - AMG-PCG\n");
-         printf("                        8  - ParaSails-PCG\n");
-         printf("                        50 - PCG\n");
-         printf("                        61 - AMG-FlexGMRES\n");
-         printf("  -vis                : save the solution for GLVis visualization\n");
-         printf("  -print_system       : print the matrix and rhs\n");
-         printf("\n");
-      }
-
-      if (print_usage)
-      {
-         MPI_Finalize();
-         return (0);
-      }
-   }
+//   {
+//      int arg_index = 0;
+//      int print_usage = 0;
+//
+//      while (arg_index < argc)
+//      {
+//         if ( strcmp(argv[arg_index], "-n") == 0 )
+//         {
+//            arg_index++;
+//            n = atoi(argv[arg_index++]);
+//         }
+//         else if ( strcmp(argv[arg_index], "-solver") == 0 )
+//         {
+//            arg_index++;
+//            solver_id = atoi(argv[arg_index++]);
+//         }
+//         else if ( strcmp(argv[arg_index], "-vis") == 0 )
+//         {
+//            arg_index++;
+//            vis = 1;
+//         }
+//         else if ( strcmp(argv[arg_index], "-print_system") == 0 )
+//         {
+//            arg_index++;
+//            print_system = 1;
+//         }
+//         else if ( strcmp(argv[arg_index], "-help") == 0 )
+//         {
+//            print_usage = 1;
+//            break;
+//         }
+//         else
+//         {
+//            arg_index++;
+//         }
+//      }
+//
+//      if ((print_usage) && (myid == 0))
+//      {
+//         printf("\n");
+//         printf("Usage: %s [<options>]\n", argv[0]);
+//         printf("\n");
+//         printf("  -n <n>              : problem size in each direction (default: 33)\n");
+//         printf("  -solver <ID>        : example only supporting default (0) for now\n");
+//         printf("  -solver <ID>        : solver ID\n");
+//         printf("                        0  - AMG (default) \n");
+//         printf("                        1  - AMG-PCG\n");
+//         printf("                        8  - ParaSails-PCG\n");
+//         printf("                        50 - PCG\n");
+//         printf("                        61 - AMG-FlexGMRES\n");
+//         printf("  -vis                : save the solution for GLVis visualization\n");
+//         printf("  -print_system       : print the matrix and rhs\n");
+//         printf("\n");
+//      }
+//
+//      if (print_usage)
+//      {
+//         MPI_Finalize();
+//         return (0);
+//      }
+//   }
 
    /* Preliminaries: want at least one processor per row */
    if (n*n < num_procs) n = sqrt(num_procs) + 1;
@@ -340,49 +323,6 @@ int main (int argc, char *argv[])
 
       /* Destroy solver */
       HYPRE_BoomerAMGDestroy(solver);
-   }
-   else
-   {
-      if (myid ==0) printf("Invalid solver id specified.\n");
-   }
-
-   /* Save the solution for GLVis visualization, see vis/glvis-ex5.sh */
-   if (vis)
-   {
-      FILE *file;
-      char filename[255];
-
-      int nvalues = local_size;
-      int *rows = (int*) calloc(nvalues, sizeof(int));
-      double *values =  (double*) calloc(nvalues, sizeof(double));
-
-      for (i = 0; i < nvalues; i++)
-         rows[i] = ilower + i;
-
-      /* get the local solution */
-      HYPRE_IJVectorGetValues(x, nvalues, rows, values);
-
-      sprintf(filename, "%s.%06d", "vis/ex5.sol", myid);
-      if ((file = fopen(filename, "w")) == NULL)
-      {
-         printf("Error: can't open output file %s\n", filename);
-         MPI_Finalize();
-         exit(1);
-      }
-
-      /* save solution */
-      for (i = 0; i < nvalues; i++)
-         fprintf(file, "%.14e\n", values[i]);
-
-      fflush(file);
-      fclose(file);
-
-      free(rows);
-      free(values);
-
-      /* save global finite element mesh */
-      if (myid == 0)
-         GLVis_PrintGlobalSquareMesh("vis/ex5.mesh", n-1);
    }
 
    /* Clean up */

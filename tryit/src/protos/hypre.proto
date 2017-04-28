@@ -2,8 +2,46 @@ syntax = "proto3";
 
 package rpc_hypre;
 
-//specifies the callable methods
+/********************************* specifies the callable methods *********************************/
 service hypreSrv {
+
+    /********************************* MATRIX *********************************/
+    //@file HYPRE_IJ_mv.h
+
+    /* Create the matrix.
+    Note that this is a square matrix, so we indicate the row partition
+    size twice (since number of rows = number of cols) */
+    rpc RPC_HYPRE_IJMatrixCreate(RPC_HYPRE_IJMatrixCreate) returns (RPC_HYPRE_IJMatrix) {}
+
+    /* Choose a parallel csr format storage (see the User's Manual) */
+    rpc RPC_HYPRE_IJMatrixSetObjectType(RPC_HYPRE_GenericMatrixIntegerParam) returns (RPC_HYPRE_IJMatrix) {}
+
+    /* Initialize before setting coefficients */
+    rpc RPC_HYPRE_IJMatrixInitialize(RPC_HYPRE_IJMatrix) returns (RPC_HYPRE_IJMatrix) {}
+
+    rpc RPC_HYPRE_IJMatrixSetValues(RPC_HYPRE_IJMatrixSetValues) returns (RPC_HYPRE_IJMatrix) {}
+    rpc RPC_HYPRE_IJMatrixAssemble(RPC_HYPRE_IJMatrix) returns (RPC_HYPRE_IJMatrix) {}
+    rpc RPC_HYPRE_IJMatrixGetObject(RPC_HYPRE_GenericMatrixIntegerParam) returns (RPC_HYPRE_IJMatrix) {}
+
+    rpc RPC_HYPRE_IJMatrixDestroy(RPC_HYPRE_IJMatrix) returns (int32) {}
+
+    /********************************* VECTOR *********************************/
+    //@file HYPRE_IJ_mv.h
+
+    /* Create the rhs and solution */
+    rpc RPC_HYPRE_IJVectorCreate(RPC_HYPRE_IJVectorCreate) returns (RPC_HYPRE_IJVector) {}
+    rpc RPC_HYPRE_IJVectorSetObjectType(RPC_HYPRE_GenericVectorxIntegerParam) returns (RPC_HYPRE_IJVector) {}
+    rpc RPC_HYPRE_IJVectorInitialize(RPC_HYPRE_IJVector) returns (RPC_HYPRE_IJVector) {}
+
+    /* Set the rhs values to h^2 and the solution to zero */
+    rpc RPC_HYPRE_IJVectorSetValues(RPC_HYPRE_IJVectorSetValues) returns (RPC_HYPRE_IJVector) {}
+
+    rpc RPC_HYPRE_IJVectorAssemble(RPC_HYPRE_IJVector) returns (RPC_HYPRE_IJVector) {}
+    rpc RPC_HYPRE_IJVectorGetObject(RPC_HYPRE_GenericVectorxIntegerParam) returns (RPC_HYPRE_IJVector) {}
+
+    rpc RPC_HYPRE_IJVectorDestroy(RPC_HYPRE_IJVector) returns (int32) {}
+
+    /********************************* BOOMER *********************************/
 
     //create solver line 315
     rpc RPC_HYPRE_BoomerAMGCreate (null) returns (RPC_HYPRE_Solver) {}
@@ -25,11 +63,77 @@ service hypreSrv {
     rpc RPC_HYPRE_BoomerAMGGetNumIterations (RPC_HYPRE_Solver) returns (num_iterations) {}
     rpc RPC_HYPRE_BoomerAMGGetFinalRelativeResidualNorm (RPC_HYPRE_Solver) returns (final_res_norm) {}
 
+    rpc RPC_HYPRE_BoomerAMGDestroy (RPC_HYPRE_Solver) returns (int32) {}
+
 }
 
-//
-//request objects (ex5)
-//
+/********************************* request objects (ex5) *********************************/
+
+//@file HYPRE_IJ_mv.h
+
+message RPC_HYPRE_IJVectorCreate {
+
+    //    MPI_Comm        comm,
+    int32 jlower = 1;
+    int32 jupper = 2;
+
+}
+
+message RPC_HYPRE_GenericVectorxIntegerParam {
+
+    RPC_HYPRE_IJVector vector = 1;
+    int32 value = 2;
+
+}
+
+message RPC_HYPRE_IJVectorSetValues {
+
+    RPC_HYPRE_IJVector vector = 1;
+    int32 nvalues = 2;
+    repeated int32 indices = 3;
+    repeated double values = 4;
+
+}
+
+message RPC_HYPRE_IJVector {
+
+    int32 identifier = 1;
+
+}
+
+message RPC_HYPRE_IJMatrixCreate {
+
+//    MPI_Comm        comm,
+    int32 ilower = 1;
+    int32 iupper = 2;
+    int32 jlower = 3;
+    int32 jupper = 4;
+
+}
+
+message RPC_HYPRE_GenericMatrixIntegerParam {
+
+    RPC_HYPRE_IJMatrix matrix = 1;
+    int32 value = 2;
+
+}
+
+message RPC_HYPRE_IJMatrixSetValues {
+
+    RPC_HYPRE_IJMatrix matrix = 1;
+    int32 nrows = 2;
+    int32 ncols = 3;//*
+    repeated int32 rows = 4;//const
+    repeated int32 cols = 5;//const
+    repeated double values = 6;//const
+
+}
+
+message RPC_HYPRE_IJMatrix {
+
+    int32 identifier = 1;
+
+}
 
 /*
  * generic integer param, always add the solver to have a context
@@ -63,10 +167,6 @@ message RPC_HYPRE_BoomerAMGSolve {
 
 }
 
-//
-//parameter objects
-//
-
 /*
  * maybe we can skip sending the solver as an actual object and just hold it on server side
  * we can use an id to identify it from client
@@ -76,6 +176,8 @@ message RPC_HYPRE_Solver {
     int32 identifier = 1;
 
 }
+
+/********************************* parameter objects *********************************/
 
 /*
  * @file _hypre_parcsr_mv.h
@@ -168,9 +270,7 @@ message RPC_HYPRE_ParVector {
 
 }
 
-//
-//helper objects
-//
+/********************************* helper objects *********************************/
 
 /*
  * @file seq_mv.h

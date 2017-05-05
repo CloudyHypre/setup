@@ -6,6 +6,7 @@ cd /vagrant
 sudo apt-get install build-essential autoconf libtool
 sudo apt-get install libgflags-dev libgtest-dev
 sudo apt-get install clang libc++-dev
+sudo apt-get install cmake
 git clone -b $(curl -L http://grpc.io/release) \\
 https://github.com/grpc/grpc
 cd grpc

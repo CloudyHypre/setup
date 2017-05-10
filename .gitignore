@@ -4,4 +4,4 @@ cmake-build-debug
 .vagrant
 .idea
 *.pb.*
-build/
+build/96

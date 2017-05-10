@@ -11,25 +11,29 @@
 #include "HYPRE_krylov.h"
 #include "HYPRE.h"
 #include "HYPRE_parcsr_ls.h"
-#include "vis.c"
+//#include "vis.c"
 
 #include "hypre.pb.h"
 #include "hypre.grpc.pb.h"
 
-#include "../../../hypre/src/utilities/_hypre_utilities.h"
-#include "../../../hypre/src/krylov/HYPRE_krylov.h"
-#include "../../../hypre/src/HYPRE.h"
-#include "../../../hypre/src/parcsr_ls/HYPRE_parcsr_ls.h"
-#include "../../../hypre/src/examples/vis.c"
+//#include "../../../hypre/src/utilities/_hypre_utilities.h"
+//#include "../../../hypre/src/krylov/HYPRE_krylov.h"
+//#include "../../../hypre/src/HYPRE.h"
+//#include "../../../hypre/src/parcsr_ls/HYPRE_parcsr_ls.h"
+//#include "../../../hypre/src/examples/vis.c"
 
 using grpc::Status;
+using grpc::ServerBuilder;
+using grpc::Server;
 
 /**
  * think about this approach to store all parameters received
  */
 class HypreParameter {
 
-  HYPRE_Solver solver;
+  ::rpc_hypre::RPC_HYPRE_Solver solver;
+
+  HYPRE_Solver hypreSolver;
 
 //  HYPRE_ParCSRMatrix parcsr_A;
   std::vector<HYPRE_ParCSRMatrix> matrices;
@@ -64,12 +68,16 @@ protected:
 
 public:
 
+  int argc;
+  char** argv;
+
   /**
    * construct
    */
   HypreService() {
-    solversList = null;
-    identifier = 0;
+    solverIdentifier = 0;
+    argc = 0;
+    argv = 0;
   }
 
   /**
@@ -83,19 +91,22 @@ public:
                                    const ::google::protobuf::Empty* request,
                                    ::rpc_hypre::RPC_HYPRE_Solver* response) override {
 
-    ::rpc_hypre::RPC_HYPRE_Solver solver = new ::rpc_hypre::RPC_HYPRE_Solver();
+    std::cout << "Running RPC_HYPRE_BoomerAMGCreate()." << std::endl;
+
+    ::rpc_hypre::RPC_HYPRE_Solver* solver = new ::rpc_hypre::RPC_HYPRE_Solver();
     HYPRE_Solver hypreSolver;
 
-    //get id and set it
-    int id = getSolverIdentifier();
-    solver->set_identifier(id);
-
     //create the hypre solver
-    HYPRE_BoomerAMGCreate(&solver);
+    HYPRE_BoomerAMGCreate(&hypreSolver);
 
     //save the solver
-    solversList[id] = solver;
-    hypreSolversList[id] = solver;
+    solversList.push_back(*solver);
+    hypreSolversList.push_back(hypreSolver);
+
+    //get the id
+    solver->set_identifier(solversList.size());
+
+    std::cout << "Finished running RPC_HYPRE_BoomerAMGCreate()." << std::endl;
 
     return Status::OK;
   }
@@ -111,6 +122,8 @@ public:
                                   const ::rpc_hypre::RPC_HYPRE_BoomerAMGSolveMessage* request,
                                   ::google::protobuf::Empty* response) {
 
+    std::cout << "Running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
+
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv just for testing vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     int i;
     int myid, num_procs;
@@ -120,7 +133,7 @@ public:
     int local_size, extra;
 
     int solver_id;
-    int vis, print_system;
+    int print_system;
 
     double h, h2;
 
@@ -302,8 +315,8 @@ public:
 //    ::rpc_hypre::RPC_HYPRE_ParVector* par_x = request->mutable_par_x();
 //    ::rpc_hypre::RPC_HYPRE_ParCSRMatrix* parcsr_A = request->mutable_parcsr_a();
 
-    ::rpc_hypre::RPC_HYPRE_Solver* solver = request->mutable_solver();
-    HYPRE_Solver hypreSolver = hypreSolversList[solver->identifier()];
+    ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
+    HYPRE_Solver hypreSolver = hypreSolversList[solver.identifier()];
 
     HYPRE_BoomerAMGSetup(hypreSolver, parcsr_A, par_b, par_x);
 
@@ -311,9 +324,13 @@ public:
 
     HYPRE_BoomerAMGSolve(hypreSolver, parcsr_A, par_b, par_x);
 
+    int num_iterations;
+    double final_res_norm;
+
     /* Run info - needed logging turned on */
-    HYPRE_BoomerAMGGetNumIterations(solver, &num_iterations);
-    HYPRE_BoomerAMGGetFinalRelativeResidualNorm(solver, &final_res_norm);
+    HYPRE_BoomerAMGGetNumIterations(hypreSolver, &num_iterations);
+    HYPRE_BoomerAMGGetFinalRelativeResidualNorm(hypreSolver, &final_res_norm);
+
     if (myid == 0)
     {
       printf("\n");
@@ -325,6 +342,8 @@ public:
     MPI_Finalize();
 
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ just for testing ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    std::cout << "Finished running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
 
   }
 
@@ -344,9 +363,12 @@ public:
 
 };
 
-void RunServer() {
+void RunServer(int argc, char** argv) {
   std::string server_address("0.0.0.0:50051");
   HypreService service;
+
+  service.argc = argc;
+  service.argv = argv;
 
   ServerBuilder builder;
   // Listen on the given address without any authentication mechanism.
@@ -365,7 +387,7 @@ void RunServer() {
 
 int main(int argc, char** argv) {
 
-  RunServer();
+  RunServer(argc, argv);
 
   return 0;
 }

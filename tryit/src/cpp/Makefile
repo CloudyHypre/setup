@@ -1,7 +1,41 @@
+######################## global ########################
+
+CXX = mpicxx
+#CXX = g++
+
+######################## hypre ########################
+
+HYPRE_DIR = ../../../hypre/src/hypre/
+
+COPTS     = -g -Wall
+CINCLUDES = -I$(HYPRE_DIR)/include
+CDEFS     = -DHAVE_CONFIG_H -DHYPRE_TIMING
+CFLAGS    = $(COPTS) $(CINCLUDES) $(CDEFS)
+CXXOPTS   = $(COPTS) -Wno-deprecated
+CXXINCLUDES = $(CINCLUDES) -I..
+CXXDEFS   = $(CDEFS)
+CXXFLAGS  = $(CXXOPTS) $(CXXINCLUDES) $(CXXDEFS)
+
+LINKOPTS  = $(COPTS)
+LIBS      = -L$(HYPRE_DIR)/lib -lHYPRE -lm
+LFLAGS    = $(LINKOPTS) $(LIBS) -lstdc++
+LFLAGS_B =\
+ -L${HYPRE_DIR}/lib\
+ -lbHYPREClient-C\
+ -lbHYPREClient-CX\
+ -lbHYPREClient-F\
+ -lbHYPRE\
+ -lsidl -ldl -lxml2
+LFLAGS77 = $(LFLAGS)
+
+.cxx.o:
+	mpicxx $(CXXFLAGS) -c $<
+
+######################## grpc ########################
 
 HOST_SYSTEM = $(shell uname | cut -f 1 -d_)
 SYSTEM ?= $(HOST_SYSTEM)
-CXX = g++
+
 CPPFLAGS += -I/usr/local/include -pthread
 CXXFLAGS += -std=c++11
 ifeq ($(SYSTEM),Darwin)
@@ -21,28 +55,15 @@ PROTOS_PATH = ../../protos
 
 vpath %.proto $(PROTOS_PATH)
 
+######################## targets ########################
+
 all: system-check rpc_hypre_client rpc_hypre_server
 
 rpc_hypre_client: hypre.pb.o hypre.grpc.pb.o rpc_hypre_client.o
-    $(CXX) $^ $(LDFLAGS) -o $@
+	$(CXX) $^ $(LDFLAGS) $(LFLAGS) $(CXXFLAGS) -o $@
 
 rpc_hypre_server: hypre.pb.o hypre.grpc.pb.o rpc_hypre_server.o
-    $(CXX) $^ $(LDFLAGS) -o $@
-
-greeter_client: helloworld.pb.o helloworld.grpc.pb.o greeter_client.o
-	$(CXX) $^ $(LDFLAGS) -o $@
-
-greeter_server: helloworld.pb.o helloworld.grpc.pb.o greeter_server.o
-	$(CXX) $^ $(LDFLAGS) -o $@
-
-greeter_async_client: helloworld.pb.o helloworld.grpc.pb.o greeter_async_client.o
-	$(CXX) $^ $(LDFLAGS) -o $@
-
-greeter_async_client2: helloworld.pb.o helloworld.grpc.pb.o greeter_async_client2.o
-	$(CXX) $^ $(LDFLAGS) -o $@
-
-greeter_async_server: helloworld.pb.o helloworld.grpc.pb.o greeter_async_server.o
-	$(CXX) $^ $(LDFLAGS) -o $@
+	$(CXX) $^ $(LDFLAGS) $(LFLAGS) $(CXXFLAGS) -o $@
 
 .PRECIOUS: %.grpc.pb.cc
 %.grpc.pb.cc: %.proto
@@ -53,7 +74,7 @@ greeter_async_server: helloworld.pb.o helloworld.grpc.pb.o greeter_async_server.
 	$(PROTOC) -I $(PROTOS_PATH) --cpp_out=. $<
 
 clean:
-	rm -f *.o *.pb.cc *.pb.h greeter_client greeter_server greeter_async_client greeter_async_client2 greeter_async_server
+	rm -f *.o *.pb.cc *.pb.h rpc_hypre_client rpc_hypre_server
 
 
 # The following is to test your system and ensure a smoother experience.

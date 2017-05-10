@@ -77,8 +77,9 @@ public:
 
     ::google::protobuf::Empty emptyResponse;
 
+    ClientContext context2;
     std::cout << "Running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
-    stub_->RPC_HYPRE_BoomerAMGSetup(&context, request, &emptyResponse);
+    stub_->RPC_HYPRE_BoomerAMGSetup(&context2, request, &emptyResponse);
     std::cout << "Finished running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
 
     if (!status.ok()) {

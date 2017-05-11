@@ -10,6 +10,7 @@ sudo apt-get install cmake
 git clone -b $(curl -L http://grpc.io/release) \\
 https://github.com/grpc/grpc
 cd grpc
+git checkout v1.3.1
 git submodule update --init
 make && sudo make install
 cd third_party/protobuf
@@ -30,3 +31,5 @@ git clone https://github.com/LLNL/hypre
 cd hypre/src
 ./configure
 make
+
+cd /vagrant/

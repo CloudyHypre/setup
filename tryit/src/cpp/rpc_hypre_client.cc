@@ -37,13 +37,15 @@ public:
    */
   HypreClient(std::shared_ptr<Channel> channel) : stub_(hypreSrv::NewStub(channel)) {}
 
+//  ~HypreClient() {}
+
   /**
    * execute ex5
    *
    * @param user
    * @return
    */
-  std::string executeExample5() {
+  int executeExample5() {
 
     //create
 
@@ -70,7 +72,10 @@ public:
     rpc_hypre::RPC_HYPRE_ParVector par_b;
     rpc_hypre::RPC_HYPRE_ParVector par_x;
 
-    request.set_allocated_solver(&solver);
+    rpc_hypre::RPC_HYPRE_Solver solver2;
+    solver2.set_identifier(solver.identifier());
+
+    request.set_allocated_solver(&solver2);
     request.set_allocated_parcsr_a(&matrixA);
     request.set_allocated_par_b(&par_b);
     request.set_allocated_par_x(&par_x);
@@ -79,11 +84,11 @@ public:
 
     ClientContext context2;
     std::cout << "Running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
-    stub_->RPC_HYPRE_BoomerAMGSetup(&context2, request, &emptyResponse);
+    Status status2 = stub_->RPC_HYPRE_BoomerAMGSetup(&context2, request, &emptyResponse);
     std::cout << "Finished running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
 
-    if (!status.ok()) {
-      std::cout << status.error_code() << ": " << status.error_message()
+    if (!status2.ok()) {
+      std::cout << status2.error_code() << ": " << status2.error_message()
                 << std::endl;
       return 0;
     }
@@ -100,7 +105,7 @@ public:
 
     std::cout << "Finished Example 5 execution." << std::endl;
 
-
+    return 1;
   }
 
 private:
@@ -119,8 +124,13 @@ int main(int argc, char** argv) {
 
   std::cout << "Started Client." << std::endl;
 
-  std::string reply = client.executeExample5();
-  std::cout << "Received: " << reply << std::endl;
+  int success = client.executeExample5();
+
+  if (success) {
+    std::cout << "Success!" << std::endl;
+  } else {
+    std::cout << "Failed!" << std::endl;
+  }
 
   std::cout << "Closing Client." << std::endl;
 

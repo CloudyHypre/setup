@@ -68,8 +68,10 @@ protected:
 
 public:
 
+  /* for MPI */
   int argc;
   char** argv;
+  int myid, num_procs;
 
   /**
    * construct
@@ -126,14 +128,13 @@ public:
 
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv just for testing vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     int i;
-    int myid, num_procs;
     int N, n;
 
     int ilower, iupper;
     int local_size, extra;
 
-    int solver_id;
-    int print_system;
+//    int solver_id;
+//    int print_system;
 
     double h, h2;
 
@@ -143,11 +144,6 @@ public:
     HYPRE_ParVector par_b;
     HYPRE_IJVector x;
     HYPRE_ParVector par_x;
-
-    /* Initialize MPI */
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
     /* Default problem parameters */
     n = 33;
@@ -339,12 +335,12 @@ public:
       printf("\n");
     }
 
-    MPI_Finalize();
 
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ just for testing ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     std::cout << "Finished running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
 
+    return Status::OK;
   }
 
   /**
@@ -358,17 +354,28 @@ public:
                                   const ::rpc_hypre::RPC_HYPRE_BoomerAMGSolveMessage* request,
                                   ::rpc_hypre::RPC_HYPRE_ParVector* response) {
 
+    return Status::OK;
 
   }
 
 };
 
 void RunServer(int argc, char** argv) {
+
+  int myid, num_procs;
+
+  /* Initialize MPI */
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+  MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+
   std::string server_address("0.0.0.0:50051");
   HypreService service;
 
   service.argc = argc;
   service.argv = argv;
+  service.myid = myid;
+  service.num_procs = num_procs;
 
   ServerBuilder builder;
   // Listen on the given address without any authentication mechanism.
@@ -383,6 +390,8 @@ void RunServer(int argc, char** argv) {
   // Wait for the server to shutdown. Note that some other thread must be
   // responsible for shutting down the server for this call to ever return.
   server->Wait();
+
+  MPI_Finalize();
 }
 
 int main(int argc, char** argv) {

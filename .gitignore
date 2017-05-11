@@ -4,4 +4,8 @@ cmake-build-debug
 .vagrant
 .idea
 *.pb.*
-build/96
+build/
+*.o
+*valgrind*
+rpc_hypre_client
+rpc_hypre_server

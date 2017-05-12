@@ -365,6 +365,19 @@ public:
                                   const ::rpc_hypre::RPC_HYPRE_BoomerAMGSolveMessage* request,
                                   ::rpc_hypre::RPC_HYPRE_ParVector* response) {
 
+    std::cout << "Using solver:" << request->solver().identifier() << std::endl;
+
+    ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
+
+    //there are no identifiers < 0
+    if ((unsigned)solver.identifier() >= hypreSolversList.size()) {
+      return Status::CANCELLED;
+    }
+
+    HYPRE_Solver hypreSolver = hypreSolversList[solver.identifier()];
+
+//    HYPRE_BoomerAMGSolve(hypreSolver, parcsr_A, par_b, par_x);
+
     return Status::OK;
 
   }

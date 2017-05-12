@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package rpc_hypre;
 
-import "google/protobuf/empty.proto";
+//import "google/protobuf/empty.proto";
 
 /********************************* specifies the callable methods *********************************/
 service hypreSrv {
@@ -25,7 +25,7 @@ service hypreSrv {
     rpc RPC_HYPRE_IJMatrixAssemble(RPC_HYPRE_IJMatrix) returns (RPC_HYPRE_IJMatrix) {}
     rpc RPC_HYPRE_IJMatrixGetObject(RPC_HYPRE_GenericMatrixIntegerParam) returns (RPC_HYPRE_IJMatrix) {}
 
-    rpc RPC_HYPRE_IJMatrixDestroy(RPC_HYPRE_IJMatrix) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_IJMatrixDestroy(RPC_HYPRE_IJMatrix) returns (Empty) {}
 
     /********************************* VECTOR *********************************/
     //@file HYPRE_IJ_mv.h
@@ -41,33 +41,35 @@ service hypreSrv {
     rpc RPC_HYPRE_IJVectorAssemble(RPC_HYPRE_IJVector) returns (RPC_HYPRE_IJVector) {}
     rpc RPC_HYPRE_IJVectorGetObject(RPC_HYPRE_GenericVectorxIntegerParam) returns (RPC_HYPRE_IJVector) {}
 
-    rpc RPC_HYPRE_IJVectorDestroy(RPC_HYPRE_IJVector) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_IJVectorDestroy(RPC_HYPRE_IJVector) returns (Empty) {}
 
     /********************************* BOOMER *********************************/
 
     //create solver line 315
-    rpc RPC_HYPRE_BoomerAMGCreate (google.protobuf.Empty) returns (RPC_HYPRE_Solver) {}
+    rpc RPC_HYPRE_BoomerAMGCreate (Empty) returns (RPC_HYPRE_Solver) {}
 
     //some parameters line 318
-    rpc RPC_HYPRE_BoomerAMGSetPrintLevel (RPC_HYPRE_GenericSolverIntegerParam) returns (google.protobuf.Empty) {}
-    rpc RPC_HYPRE_BoomerAMGSetOldDefault (RPC_HYPRE_Solver) returns (google.protobuf.Empty) {}
-    rpc RPC_HYPRE_BoomerAMGSetRelaxType (RPC_HYPRE_GenericSolverIntegerParam) returns (google.protobuf.Empty) {}
-    rpc RPC_HYPRE_BoomerAMGSetRelaxOrder (RPC_HYPRE_GenericSolverIntegerParam) returns (google.protobuf.Empty) {}
-    rpc RPC_HYPRE_BoomerAMGSetNumSweeps (RPC_HYPRE_GenericSolverIntegerParam) returns (google.protobuf.Empty) {}
-    rpc RPC_HYPRE_BoomerAMGSetMaxLevels (RPC_HYPRE_GenericSolverIntegerParam) returns (google.protobuf.Empty) {}
-    rpc RPC_HYPRE_BoomerAMGSetTol (RPC_HYPRE_GenericSolverDoubleParam) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetPrintLevel (RPC_HYPRE_GenericSolverIntegerParam) returns (Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetOldDefault (RPC_HYPRE_Solver) returns (Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetRelaxType (RPC_HYPRE_GenericSolverIntegerParam) returns (Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetRelaxOrder (RPC_HYPRE_GenericSolverIntegerParam) returns (Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetNumSweeps (RPC_HYPRE_GenericSolverIntegerParam) returns (Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetMaxLevels (RPC_HYPRE_GenericSolverIntegerParam) returns (Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetTol (RPC_HYPRE_GenericSolverDoubleParam) returns (Empty) {}
 
     //setup and solve line 326
-    rpc RPC_HYPRE_BoomerAMGSetup (RPC_HYPRE_BoomerAMGSolveMessage) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_BoomerAMGSetup (RPC_HYPRE_BoomerAMGSolveMessage) returns (Empty) {}
     rpc RPC_HYPRE_BoomerAMGSolve (RPC_HYPRE_BoomerAMGSolveMessage) returns (RPC_HYPRE_ParVector) {}
 
     //run info line 330
     rpc RPC_HYPRE_BoomerAMGGetNumIterations (RPC_HYPRE_Solver) returns (RPC_HYPRE_INTEGER) {}
     rpc RPC_HYPRE_BoomerAMGGetFinalRelativeResidualNorm (RPC_HYPRE_Solver) returns (RPC_HYPRE_DOUBLE) {}
 
-    rpc RPC_HYPRE_BoomerAMGDestroy (RPC_HYPRE_Solver) returns (google.protobuf.Empty) {}
+    rpc RPC_HYPRE_BoomerAMGDestroy (RPC_HYPRE_Solver) returns (Empty) {}
 
 }
+
+message Empty {}
 
 /********************************* request objects (ex5) *********************************/
 

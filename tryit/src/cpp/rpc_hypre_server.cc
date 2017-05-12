@@ -90,23 +90,27 @@ public:
    * @return
    */
   Status RPC_HYPRE_BoomerAMGCreate(::grpc::ServerContext* context,
-                                   const ::google::protobuf::Empty* request,
-                                   ::rpc_hypre::RPC_HYPRE_Solver* response) override {
+                                   const ::rpc_hypre::Empty* request,
+                                   ::rpc_hypre::RPC_HYPRE_Solver* solver) override {
 
     std::cout << "Running RPC_HYPRE_BoomerAMGCreate()." << std::endl;
 
-    ::rpc_hypre::RPC_HYPRE_Solver* solver = new ::rpc_hypre::RPC_HYPRE_Solver();
+//    ::rpc_hypre::RPC_HYPRE_Solver* solver = new ::rpc_hypre::RPC_HYPRE_Solver();
     HYPRE_Solver hypreSolver;
 
     //create the hypre solver
     HYPRE_BoomerAMGCreate(&hypreSolver);
 
+    std::cout << "size:" << hypreSolversList.size() << std::endl;
+
     //save the solver
     solversList.push_back(*solver);
     hypreSolversList.push_back(hypreSolver);
 
+    std::cout << "size:" << hypreSolversList.size() << std::endl;
+
     //get the id
-    solver->set_identifier(solversList.size());
+    solver->set_identifier(hypreSolversList.size()-1);
 
     std::cout << "Finished running RPC_HYPRE_BoomerAMGCreate()." << std::endl;
 
@@ -122,9 +126,10 @@ public:
    */
   Status RPC_HYPRE_BoomerAMGSetup(::grpc::ServerContext* context,
                                   const ::rpc_hypre::RPC_HYPRE_BoomerAMGSolveMessage* request,
-                                  ::google::protobuf::Empty* response) {
+                                  ::rpc_hypre::Empty* response) {
 
     std::cout << "Running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
+    std::cout << "Using solver:" << request->solver().identifier() << std::endl;
 
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv just for testing vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     int i;
@@ -312,6 +317,12 @@ public:
 //    ::rpc_hypre::RPC_HYPRE_ParCSRMatrix* parcsr_A = request->mutable_parcsr_a();
 
     ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
+
+    //there are no identifiers < 0
+    if ((unsigned)solver.identifier() >= hypreSolversList.size()) {
+      return Status::CANCELLED;
+    }
+
     HYPRE_Solver hypreSolver = hypreSolversList[solver.identifier()];
 
     HYPRE_BoomerAMGSetup(hypreSolver, parcsr_A, par_b, par_x);

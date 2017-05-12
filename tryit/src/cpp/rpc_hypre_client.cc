@@ -49,22 +49,21 @@ public:
 
     //create
 
-    std::cout << "Starting Example 5 execution." << std::endl;
-
     ClientContext context;
-    ::google::protobuf::Empty emptyRequest;
+    ::rpc_hypre::Empty emptyRequest;
     rpc_hypre::RPC_HYPRE_Solver solver;
 
     std::cout << "Running RPC_HYPRE_BoomerAMGCreate()." << std::endl;
     Status status = stub_->RPC_HYPRE_BoomerAMGCreate(&context, emptyRequest, &solver);
     std::cout << "Finished running RPC_HYPRE_BoomerAMGCreate()." << std::endl;
 
+    std::cout << "Got solver: " << solver.identifier() << std::endl;
+
     if (!status.ok()) {
       std::cout << status.error_code() << ": " << status.error_message()
                 << std::endl;
       return 0;
     }
-
     //set it up
 
     rpc_hypre::RPC_HYPRE_BoomerAMGSolveMessage request;
@@ -80,18 +79,18 @@ public:
     request.set_allocated_par_b(&par_b);
     request.set_allocated_par_x(&par_x);
 
-    ::google::protobuf::Empty emptyResponse;
+    ::rpc_hypre::Empty emptyResponse;
 
     ClientContext context2;
     std::cout << "Running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
     Status status2 = stub_->RPC_HYPRE_BoomerAMGSetup(&context2, request, &emptyResponse);
-    std::cout << "Finished running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
+//    std::cout << "Finished running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
 
-    if (!status2.ok()) {
-      std::cout << status2.error_code() << ": " << status2.error_message()
-                << std::endl;
-      return 0;
-    }
+//    if (!status2.ok()) {
+//      std::cout << "Call was not successful. Error code: " << status2.error_code() << " Message: " << status2.error_message()
+//                << std::endl;
+//      return 0;
+//    }
 
     //solve (later)
 
@@ -103,9 +102,10 @@ public:
 //      return 0;
 //    }
 
-    std::cout << "Finished Example 5 execution." << std::endl;
 
-    return 1;
+    std::cout << "Bye" << std::endl;
+
+    return 10;
   }
 
 private:
@@ -124,7 +124,9 @@ int main(int argc, char** argv) {
 
   std::cout << "Started Client." << std::endl;
 
+  std::cout << "Starting Example 5 execution." << std::endl;
   int success = client.executeExample5();
+  std::cout << "Finished Example 5 execution." << std::endl;
 
   if (success) {
     std::cout << "Success!" << std::endl;

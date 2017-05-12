@@ -4,17 +4,20 @@
 
 cd /vagrant
 
+echo "installing git"
 sudo apt-get install git
+
 #grpc
-sudo apt-get install build-essential autoconf libtool
-sudo apt-get install libgflags-dev libgtest-dev
-sudo apt-get install clang libc++-dev
-sudo apt-get install cmake
-sudo apt-get install pkg-config
+sudo apt-get install -y build-essential autoconf libtool libgflags-dev libgtest-dev clang libc++-dev cmake pkg-config
+
 #protobuf
-sudo apt-get install unzip
+sudo apt-get install -y autoconf automake libtool curl make g++ zip unzip
+
 #hypre
-sudo apt-get install mpich
+sudo apt-get install -y mpich
+
+rm -r grpc
+rm -r hypre
 
 #get grpc
 git clone -b $(curl -L http://grpc.io/release) https://github.com/grpc/grpc
@@ -26,11 +29,14 @@ git submodule update --init
 cd third_party/protobuf
 git checkout v3.0.x
 
-#install protobuf
+#install protobuf https://github.com/google/protobuf/blob/master/src/README.md
 ./autogen.sh
+#./configure --prefix=/usr
 ./configure
 make
+make check
 sudo make install
+sudo ldconfig #/usr/local/lib
 
 #install grpc
 cd -
@@ -49,5 +55,7 @@ cd hypre/src
 make
 
 cd /vagrant/tryit/src/cpp/
+make clean
 make
+
 cd /vagrant

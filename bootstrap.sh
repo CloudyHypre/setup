@@ -4,8 +4,8 @@
 
 cd /vagrant
 
-echo "installing git"
-sudo apt-get install git
+sudo apt-get install -y git
+sudo apt-get install -y valgrind
 
 #grpc
 sudo apt-get install -y build-essential autoconf libtool libgflags-dev libgtest-dev clang libc++-dev cmake pkg-config

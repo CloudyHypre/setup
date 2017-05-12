@@ -66,31 +66,31 @@ public:
     }
     //set it up
 
-    rpc_hypre::RPC_HYPRE_BoomerAMGSolveMessage request;
-    rpc_hypre::RPC_HYPRE_ParCSRMatrix matrixA;
-    rpc_hypre::RPC_HYPRE_ParVector par_b;
-    rpc_hypre::RPC_HYPRE_ParVector par_x;
+    rpc_hypre::RPC_HYPRE_BoomerAMGSolveMessage* request = new rpc_hypre::RPC_HYPRE_BoomerAMGSolveMessage;
+    rpc_hypre::RPC_HYPRE_ParCSRMatrix* matrixA = new rpc_hypre::RPC_HYPRE_ParCSRMatrix;
+    rpc_hypre::RPC_HYPRE_ParVector* par_b = new rpc_hypre::RPC_HYPRE_ParVector;
+    rpc_hypre::RPC_HYPRE_ParVector* par_x = new rpc_hypre::RPC_HYPRE_ParVector;
 
-    rpc_hypre::RPC_HYPRE_Solver solver2;
-    solver2.set_identifier(solver.identifier());
+    rpc_hypre::RPC_HYPRE_Solver* solver2 = new rpc_hypre::RPC_HYPRE_Solver;
+    solver2->set_identifier(solver.identifier());
 
-    request.set_allocated_solver(&solver2);
-    request.set_allocated_parcsr_a(&matrixA);
-    request.set_allocated_par_b(&par_b);
-    request.set_allocated_par_x(&par_x);
+    request->set_allocated_solver(solver2);
+    request->set_allocated_parcsr_a(matrixA);
+    request->set_allocated_par_b(par_b);
+    request->set_allocated_par_x(par_x);
 
     ::rpc_hypre::Empty emptyResponse;
 
     ClientContext context2;
     std::cout << "Running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
-    Status status2 = stub_->RPC_HYPRE_BoomerAMGSetup(&context2, request, &emptyResponse);
-//    std::cout << "Finished running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
+    Status status2 = stub_->RPC_HYPRE_BoomerAMGSetup(&context2, *request, &emptyResponse);
+    std::cout << "Finished running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
 
-//    if (!status2.ok()) {
-//      std::cout << "Call was not successful. Error code: " << status2.error_code() << " Message: " << status2.error_message()
-//                << std::endl;
-//      return 0;
-//    }
+    if (!status2.ok()) {
+      std::cout << "Call was not successful. Error code: " << status2.error_code() << " Message: " << status2.error_message()
+                << std::endl;
+      return 0;
+    }
 
     //solve (later)
 
@@ -102,10 +102,15 @@ public:
 //      return 0;
 //    }
 
+    delete request;
 
-    std::cout << "Bye" << std::endl;
+    //results in seg fault:
+//    delete matrixA;
+//    delete par_b;
+//    delete par_x;
+//    delete solver2;
 
-    return 10;
+    return 1;
   }
 
 private:
@@ -119,8 +124,7 @@ int main(int argc, char** argv) {
 
   std::cout << "Starting Client." << std::endl;
 
-  HypreClient client(grpc::CreateChannel(
-      "localhost:50051", grpc::InsecureChannelCredentials()));
+  HypreClient client(grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
 
   std::cout << "Started Client." << std::endl;
 

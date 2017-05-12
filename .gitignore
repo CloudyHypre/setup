@@ -6,6 +6,6 @@ cmake-build-debug
 *.pb.*
 build/
 *.o
-*valgrind*
+valgrind.out
 rpc_hypre_client
 rpc_hypre_server

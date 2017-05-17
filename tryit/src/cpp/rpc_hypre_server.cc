@@ -16,24 +16,30 @@
 #include "hypre.pb.h"
 #include "hypre.grpc.pb.h"
 
-//#include "../../../hypre/src/utilities/_hypre_utilities.h"
-//#include "../../../hypre/src/krylov/HYPRE_krylov.h"
-//#include "../../../hypre/src/HYPRE.h"
-//#include "../../../hypre/src/parcsr_ls/HYPRE_parcsr_ls.h"
-//#include "../../../hypre/src/examples/vis.c"
+#include "../../../hypre/src/utilities/_hypre_utilities.h"
+#include "../../../hypre/src/krylov/HYPRE_krylov.h"
+#include "../../../hypre/src/HYPRE.h"
+#include "../../../hypre/src/parcsr_ls/HYPRE_parcsr_ls.h"
+#include "../../../hypre/src/examples/vis.c"
 
 using grpc::Status;
 using grpc::ServerBuilder;
 using grpc::Server;
 
+using namespace ::rpc_hypre;
+
 /**
  * think about this approach to store all parameters received
  */
-class HypreParameter {
+class HypreContext {
 
   ::rpc_hypre::RPC_HYPRE_Solver solver;
 
   HYPRE_Solver hypreSolver;
+
+  ::rpc_hypre::RPC_HYPRE_IJMatrix matrix;
+
+  HYPRE_IJMatrix hypreMatrix;
 
 //  HYPRE_ParCSRMatrix parcsr_A;
   std::vector<HYPRE_ParCSRMatrix> matrices;
@@ -52,18 +58,31 @@ class HypreService final : public rpc_hypre::hypreSrv::Service {
 private:
 protected:
 
-  int solverIdentifier;
+  std::vector<HypreContext> contextList;
+
   std::vector<::rpc_hypre::RPC_HYPRE_Solver> solversList;
   std::vector<HYPRE_Solver> hypreSolversList;
 
+  std::vector<::rpc_hypre::RPC_HYPRE_IJMatrix> matrixList;
+  std::vector<HYPRE_IJMatrix> hypreMatrixList;
+
+
   /**
-   *
-   * @return
+   * @return int
    */
   int getSolverIdentifier() {
-    int current = solverIdentifier;
-    solverIdentifier++;
-    return current;
+
+    return hypreSolversList.size()-1;
+
+  }
+
+  /**
+   * @return int
+   */
+  int getMatrixIdentifier() {
+
+    return hypreMatrixList.size()-1;
+
   }
 
 public:
@@ -77,10 +96,93 @@ public:
    * construct
    */
   HypreService() {
-    solverIdentifier = 0;
     argc = 0;
     argv = 0;
   }
+
+  Status RPC_HYPRE_IJMatrixCreate(::grpc::ServerContext* context,
+                                  const ::rpc_hypre::RPC_HYPRE_IJMatrixCreateMessage* request,
+                                  ::rpc_hypre::RPC_HYPRE_IJMatrix* matrix) override {
+
+    HYPRE_IJMatrix hypreMatrix;
+    HYPRE_IJMatrixCreate(
+        MPI_COMM_WORLD, request->ilower(), request->iupper(), request->jlower(), request->jupper(), &hypreMatrix
+    );
+
+    //save the matrix
+    matrixList.push_back(*matrix);
+    hypreMatrixList.push_back(hypreMatrix);
+
+    //get the id
+    matrix->set_identifier(getMatrixIdentifier());
+
+    return Status::OK;
+
+  }
+
+  Status RPC_HYPRE_IJMatrixSetObjectType(::grpc::ServerContext* context,
+                                         const ::rpc_hypre::RPC_HYPRE_GenericMatrixIntegerParam* request,
+                                         ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
+
+    HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->matrix().identifier()];
+
+    HYPRE_IJMatrixSetObjectType(hypreMatrix, request->value());
+
+    return Status::OK;
+
+  }
+
+  Status RPC_HYPRE_IJMatrixInitialize(::grpc::ServerContext* context,
+                                      const ::rpc_hypre::RPC_HYPRE_IJMatrix* request,
+                                      ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
+
+
+    HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
+
+    return Status::OK;
+
+  }
+
+  Status RPC_HYPRE_IJMatrixSetValues(::grpc::ServerContext* context,
+                                     const ::rpc_hypre::RPC_HYPRE_IJMatrixSetValuesMessage* request,
+                                     ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
+
+    HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->matrix().identifier()];
+
+    return Status::OK;
+
+  }
+
+  Status RPC_HYPRE_IJMatrixAssemble(::grpc::ServerContext* context,
+                                    const ::rpc_hypre::RPC_HYPRE_IJMatrix* request,
+                                    ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
+
+    HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
+
+    return Status::OK;
+
+  }
+
+  Status RPC_HYPRE_IJMatrixGetObject(::grpc::ServerContext* context,
+                                     const ::rpc_hypre::RPC_HYPRE_GenericMatrixIntegerParam* request,
+                                     ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
+
+    HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->matrix().identifier()];
+
+    return Status::OK;
+
+  }
+
+  Status RPC_HYPRE_IJMatrixDestroy(::grpc::ServerContext* context,
+                                   const ::rpc_hypre::RPC_HYPRE_IJMatrix* request,
+                                   ::rpc_hypre::Empty* response) override {
+
+    HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
+
+    return Status::OK;
+
+  }
+
 
   /**
    *
@@ -101,16 +203,12 @@ public:
     //create the hypre solver
     HYPRE_BoomerAMGCreate(&hypreSolver);
 
-    std::cout << "size:" << hypreSolversList.size() << std::endl;
-
     //save the solver
     solversList.push_back(*solver);
     hypreSolversList.push_back(hypreSolver);
 
-    std::cout << "size:" << hypreSolversList.size() << std::endl;
-
     //get the id
-    solver->set_identifier(hypreSolversList.size()-1);
+    solver->set_identifier(getSolverIdentifier());
 
     std::cout << "Finished running RPC_HYPRE_BoomerAMGCreate()." << std::endl;
 
@@ -130,6 +228,10 @@ public:
 
     std::cout << "Running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
     std::cout << "Using solver:" << request->solver().identifier() << std::endl;
+
+//    ::rpc_hypre::RPC_HYPRE_ParVector* par_b = request->mutable_par_b();
+//    ::rpc_hypre::RPC_HYPRE_ParVector* par_x = request->mutable_par_x();
+//    ::rpc_hypre::RPC_HYPRE_ParCSRMatrix* parcsr_A = request->mutable_parcsr_a();
 
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv just for testing vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     int i;
@@ -159,11 +261,17 @@ public:
     h = 1.0/(n+1); /* mesh size*/
     h2 = h*h;
 
+    std::cout << "global number of rows: " << N << std::endl;
+    std::cout << "mesh size: " << h << std::endl;
+
     /* Each processor knows only of its own rows - the range is denoted by ilower
        and upper.  Here we partition the rows. We account for the fact that
        N may not divide evenly by the number of processors. */
     local_size = N/num_procs;
     extra = N - local_size*num_procs;
+
+    std::cout << "num procs: " << num_procs << std::endl;
+    std::cout << "local size: " << local_size << std::endl;
 
     ilower = local_size*myid;
     ilower += hypre_min(myid, extra);
@@ -196,6 +304,9 @@ public:
       int nnz;
       double values[5];
       int cols[5];
+
+      std::cout << "ilower: " << ilower << std::endl;
+      std::cout << "iupper: " << iupper << std::endl;
 
       for (i = ilower; i <= iupper; i++)
       {
@@ -312,10 +423,6 @@ public:
     HYPRE_IJVectorGetObject(x, (void **) &par_x);
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ just for testing ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-//    ::rpc_hypre::RPC_HYPRE_ParVector* par_b = request->mutable_par_b();
-//    ::rpc_hypre::RPC_HYPRE_ParVector* par_x = request->mutable_par_x();
-//    ::rpc_hypre::RPC_HYPRE_ParCSRMatrix* parcsr_A = request->mutable_parcsr_a();
-
     ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
 
     //there are no identifiers < 0
@@ -345,7 +452,6 @@ public:
       printf("Final Relative Residual Norm = %e\n", final_res_norm);
       printf("\n");
     }
-
 
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ just for testing ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -377,6 +483,21 @@ public:
     HYPRE_Solver hypreSolver = hypreSolversList[solver.identifier()];
 
 //    HYPRE_BoomerAMGSolve(hypreSolver, parcsr_A, par_b, par_x);
+//
+//    int num_iterations;
+//    double final_res_norm;
+//
+//    /* Run info - needed logging turned on */
+//    HYPRE_BoomerAMGGetNumIterations(hypreSolver, &num_iterations);
+//    HYPRE_BoomerAMGGetFinalRelativeResidualNorm(hypreSolver, &final_res_norm);
+//
+//    if (myid == 0)
+//    {
+//      printf("\n");
+//      printf("Iterations = %d\n", num_iterations);
+//      printf("Final Relative Residual Norm = %e\n", final_res_norm);
+//      printf("\n");
+//    }
 
     return Status::OK;
 
@@ -393,27 +514,32 @@ void RunServer(int argc, char** argv) {
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
   MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
-  std::string server_address("0.0.0.0:50051");
-  HypreService service;
+  if (myid == 0)
+  {
 
-  service.argc = argc;
-  service.argv = argv;
-  service.myid = myid;
-  service.num_procs = num_procs;
+    std::string server_address("0.0.0.0:50051");
+    HypreService service;
 
-  ServerBuilder builder;
-  // Listen on the given address without any authentication mechanism.
-  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-  // Register "service" as the instance through which we'll communicate with
-  // clients. In this case it corresponds to an *synchronous* service.
-  builder.RegisterService(&service);
-  // Finally assemble the server.
-  std::unique_ptr<Server> server(builder.BuildAndStart());
-  std::cout << "Server listening on " << server_address << std::endl;
+    service.argc = argc;
+    service.argv = argv;
+    service.myid = myid;
+    service.num_procs = num_procs;
 
-  // Wait for the server to shutdown. Note that some other thread must be
-  // responsible for shutting down the server for this call to ever return.
-  server->Wait();
+    ServerBuilder builder;
+    // Listen on the given address without any authentication mechanism.
+    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+    // Register "service" as the instance through which we'll communicate with
+    // clients. In this case it corresponds to an *synchronous* service.
+    builder.RegisterService(&service);
+    // Finally assemble the server.
+    std::unique_ptr<Server> server(builder.BuildAndStart());
+    std::cout << "Server listening on " << server_address << std::endl;
+
+    // Wait for the server to shutdown. Note that some other thread must be
+    // responsible for shutting down the server for this call to ever return.
+    server->Wait();
+
+  }
 
   MPI_Finalize();
 }

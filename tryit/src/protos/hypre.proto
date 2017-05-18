@@ -126,7 +126,7 @@ message RPC_HYPRE_IJMatrixSetValuesMessage {
 
     RPC_HYPRE_IJMatrix matrix = 1;
     int32 nrows = 2;
-    int32 ncols = 3;//*
+    repeated int32 ncols = 3;//*
     repeated int32 rows = 4;//const
     repeated int32 cols = 5;//const
     repeated double values = 6;//const

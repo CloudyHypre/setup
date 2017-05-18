@@ -66,6 +66,8 @@ protected:
   std::vector<::rpc_hypre::RPC_HYPRE_IJMatrix> matrixList;
   std::vector<HYPRE_IJMatrix> hypreMatrixList;
 
+  std::vector<::rpc_hypre::RPC_HYPRE_ParCSRMatrix> parMatrixList;
+  std::vector<HYPRE_ParCSRMatrix> hypreParMatrixList;
 
   /**
    * @return int
@@ -85,6 +87,15 @@ protected:
 
   }
 
+  /**
+   * @return int
+   */
+  int getParMatrixIdentifier() {
+
+    return hypreParMatrixList.size()-1;
+
+  }
+
 public:
 
   /* for MPI */
@@ -100,6 +111,37 @@ public:
     argv = 0;
   }
 
+  int* repeatedToArray(int size, const ::google::protobuf::RepeatedField< ::google::protobuf::int32> &repeated) {
+
+    int* intArray = new int[size];
+    for (int i = 0; i < size; i++) {
+
+      intArray[i] = repeated[i];
+
+    }
+    return intArray;
+
+  }
+
+  double* repeatedToArray(int size, const ::google::protobuf::RepeatedField<double> &repeated) {
+
+    double* doubleArray = new double[size];
+    for (int i = 0; i < size; i++) {
+
+      doubleArray[i] = repeated[i];
+
+    }
+    return doubleArray;
+
+  }
+
+  /**
+   *
+   * @param context
+   * @param request
+   * @param matrix
+   * @return Status
+   */
   Status RPC_HYPRE_IJMatrixCreate(::grpc::ServerContext* context,
                                   const ::rpc_hypre::RPC_HYPRE_IJMatrixCreateMessage* request,
                                   ::rpc_hypre::RPC_HYPRE_IJMatrix* matrix) override {
@@ -120,64 +162,124 @@ public:
 
   }
 
+  /**
+   *
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
   Status RPC_HYPRE_IJMatrixSetObjectType(::grpc::ServerContext* context,
                                          const ::rpc_hypre::RPC_HYPRE_GenericMatrixIntegerParam* request,
                                          ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
 
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->matrix().identifier()];
-
     HYPRE_IJMatrixSetObjectType(hypreMatrix, request->value());
 
     return Status::OK;
 
   }
 
+  /**
+   *
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
   Status RPC_HYPRE_IJMatrixInitialize(::grpc::ServerContext* context,
                                       const ::rpc_hypre::RPC_HYPRE_IJMatrix* request,
                                       ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
 
-
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
+    HYPRE_IJMatrixInitialize(hypreMatrix);
 
     return Status::OK;
 
   }
 
+  /**
+   *
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
   Status RPC_HYPRE_IJMatrixSetValues(::grpc::ServerContext* context,
                                      const ::rpc_hypre::RPC_HYPRE_IJMatrixSetValuesMessage* request,
                                      ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
 
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->matrix().identifier()];
 
+    HYPRE_IJMatrixSetValues(
+        hypreMatrix,
+        request->nrows(),
+        repeatedToArray(request->ncols_size(), request->ncols()),
+        repeatedToArray(request->rows_size(), request->rows()),
+        repeatedToArray(request->cols_size(), request->cols()),
+        repeatedToArray(request->values_size(), request->values())
+    );
+
     return Status::OK;
 
   }
 
+  /**
+   *
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
   Status RPC_HYPRE_IJMatrixAssemble(::grpc::ServerContext* context,
                                     const ::rpc_hypre::RPC_HYPRE_IJMatrix* request,
                                     ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
 
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
+    HYPRE_IJMatrixAssemble(hypreMatrix);
 
     return Status::OK;
 
   }
 
+  /**
+   *
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
   Status RPC_HYPRE_IJMatrixGetObject(::grpc::ServerContext* context,
                                      const ::rpc_hypre::RPC_HYPRE_GenericMatrixIntegerParam* request,
                                      ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
 
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->matrix().identifier()];
 
+    RPC_HYPRE_ParCSRMatrix parcsr_A;
+    HYPRE_ParCSRMatrix hypreParcsr_A;
+
+    HYPRE_IJMatrixGetObject(hypreMatrix, (void**) &hypreParcsr_A);
+
+    parMatrixList.push_back(parcsr_A);
+    hypreParMatrixList.push_back(hypreParcsr_A);
+
     return Status::OK;
 
   }
 
+  /**
+   *
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
   Status RPC_HYPRE_IJMatrixDestroy(::grpc::ServerContext* context,
                                    const ::rpc_hypre::RPC_HYPRE_IJMatrix* request,
                                    ::rpc_hypre::Empty* response) override {
 
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
+    HYPRE_IJMatrixDestroy(hypreMatrix);
 
     return Status::OK;
 

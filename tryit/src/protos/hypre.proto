@@ -213,54 +213,56 @@ message RPC_HYPRE_SUCCESS {
  */
 message RPC_HYPRE_ParCSRMatrix {
 
-    //MPI_Comm comm;
+    int32 identifier = 1;
 
-    int32 global_num_rows = 1;
-    int32 global_num_cols = 2;
-    int32 first_row_index = 3;
-    int32 first_col_diag = 4;
-
-    // need to know entire local range in case row_starts and col_starts are null  (i.e., bgl) AHB 6/05
-    int32 last_row_index = 5;
-    int32 last_col_diag = 6;
-
-    RPC_HYPRE_CSRMatrix diag = 7;
-    RPC_HYPRE_CSRMatrix offd = 8;
-    RPC_HYPRE_CSRMatrix diagT = 9;
-    RPC_HYPRE_CSRMatrix offdT = 10;
-
-    // JSP: transposed matrices are created lazily and optional
-    int32 col_map_offd = 11;
-
-    // maps columns of offd to global columns
-    int32 row_starts = 12;
-
-    // array of length num_procs+1, row_starts[i] contains the global number of the first row on proc i,
-    //first_row_index = row_starts[my_id], row_starts[num_procs] = global_num_rows
-    int32 col_starts = 13;
-
-    // array of length num_procs+1, col_starts[i] contains the global number of the first column of diag on proc i,
-    //first_col_diag = col_starts[my_id], col_starts[num_procs] = global_num_cols
-
-    RPC_HYPRE_ParCSRCommPkg comm_pkg = 14;
-    RPC_HYPRE_ParCSRCommPkg comm_pkgT = 15;
-
-    // Does the ParCSRMatrix create/destroy `diag', `offd', `col_map_offd'?
-    int32 owns_data = 16;
-    // Does the ParCSRMatrix create/destroy `row_starts', `col_starts'?
-    int32 owns_row_starts = 17;
-    int32 owns_col_starts = 18;
-
-    int32 num_nonzeros = 19;
-    double d_num_nonzeros = 20;
-
-    // Buffers used by GetRow to hold row currently being accessed. AJC, 4/99
-    int32 rowindices = 21;
-    double rowvalues = 22;
-    int32 getrowactive = 23;
-
-    RPC_HYPRE_IJAssumedPart assumed_partition = 24;
-    // only populated if no_global_partition option is used (compile-time option)
+//    //MPI_Comm comm;
+//
+//    int32 global_num_rows = 1;
+//    int32 global_num_cols = 2;
+//    int32 first_row_index = 3;
+//    int32 first_col_diag = 4;
+//
+//    // need to know entire local range in case row_starts and col_starts are null  (i.e., bgl) AHB 6/05
+//    int32 last_row_index = 5;
+//    int32 last_col_diag = 6;
+//
+//    RPC_HYPRE_CSRMatrix diag = 7;
+//    RPC_HYPRE_CSRMatrix offd = 8;
+//    RPC_HYPRE_CSRMatrix diagT = 9;
+//    RPC_HYPRE_CSRMatrix offdT = 10;
+//
+//    // JSP: transposed matrices are created lazily and optional
+//    int32 col_map_offd = 11;
+//
+//    // maps columns of offd to global columns
+//    int32 row_starts = 12;
+//
+//    // array of length num_procs+1, row_starts[i] contains the global number of the first row on proc i,
+//    //first_row_index = row_starts[my_id], row_starts[num_procs] = global_num_rows
+//    int32 col_starts = 13;
+//
+//    // array of length num_procs+1, col_starts[i] contains the global number of the first column of diag on proc i,
+//    //first_col_diag = col_starts[my_id], col_starts[num_procs] = global_num_cols
+//
+//    RPC_HYPRE_ParCSRCommPkg comm_pkg = 14;
+//    RPC_HYPRE_ParCSRCommPkg comm_pkgT = 15;
+//
+//    // Does the ParCSRMatrix create/destroy `diag', `offd', `col_map_offd'?
+//    int32 owns_data = 16;
+//    // Does the ParCSRMatrix create/destroy `row_starts', `col_starts'?
+//    int32 owns_row_starts = 17;
+//    int32 owns_col_starts = 18;
+//
+//    int32 num_nonzeros = 19;
+//    double d_num_nonzeros = 20;
+//
+//    // Buffers used by GetRow to hold row currently being accessed. AJC, 4/99
+//    int32 rowindices = 21;
+//    double rowvalues = 22;
+//    int32 getrowactive = 23;
+//
+//    RPC_HYPRE_IJAssumedPart assumed_partition = 24;
+//    // only populated if no_global_partition option is used (compile-time option)
 
 }
 

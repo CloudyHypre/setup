@@ -135,6 +135,8 @@ public:
 
   }
 
+  /// ----------------------------------- MATRIX -----------------------------------
+
   /**
    *
    * @param context
@@ -146,6 +148,8 @@ public:
                                   const ::rpc_hypre::RPC_HYPRE_IJMatrixCreateMessage* request,
                                   ::rpc_hypre::RPC_HYPRE_IJMatrix* matrix) override {
 
+    std::cout << "Create Matrix..." << std::endl;
+
     HYPRE_IJMatrix hypreMatrix;
     HYPRE_IJMatrixCreate(
         MPI_COMM_WORLD, request->ilower(), request->iupper(), request->jlower(), request->jupper(), &hypreMatrix
@@ -155,8 +159,12 @@ public:
     matrixList.push_back(*matrix);
     hypreMatrixList.push_back(hypreMatrix);
 
+    int id = getMatrixIdentifier();
+
+    std::cout << "Created Matrix:" << id << std::endl;
+
     //get the id
-    matrix->set_identifier(getMatrixIdentifier());
+    matrix->set_identifier(id);
 
     return Status::OK;
 
@@ -173,8 +181,14 @@ public:
                                          const ::rpc_hypre::RPC_HYPRE_GenericMatrixIntegerParam* request,
                                          ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
 
+    std::cout << "Matrix:" << request->matrix().identifier()
+              << " set object type"
+              << std::endl;
+
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->matrix().identifier()];
     HYPRE_IJMatrixSetObjectType(hypreMatrix, request->value());
+
+    response->set_identifier(request->matrix().identifier());
 
     return Status::OK;
 
@@ -190,6 +204,10 @@ public:
   Status RPC_HYPRE_IJMatrixInitialize(::grpc::ServerContext* context,
                                       const ::rpc_hypre::RPC_HYPRE_IJMatrix* request,
                                       ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
+
+    std::cout << "Matrix:" << request->identifier()
+              << " init"
+              << std::endl;
 
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
     HYPRE_IJMatrixInitialize(hypreMatrix);
@@ -235,6 +253,10 @@ public:
                                     const ::rpc_hypre::RPC_HYPRE_IJMatrix* request,
                                     ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
 
+    std::cout << "Matrix:" << request->identifier()
+              << " assemble"
+              << std::endl;
+
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
     HYPRE_IJMatrixAssemble(hypreMatrix);
 
@@ -253,6 +275,10 @@ public:
                                      const ::rpc_hypre::RPC_HYPRE_GenericMatrixIntegerParam* request,
                                      ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
 
+    std::cout << "Matrix:" << request->matrix().identifier()
+              << " get object"
+              << std::endl;
+
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->matrix().identifier()];
 
     RPC_HYPRE_ParCSRMatrix parcsr_A;
@@ -262,6 +288,10 @@ public:
 
     parMatrixList.push_back(parcsr_A);
     hypreParMatrixList.push_back(hypreParcsr_A);
+
+    int id = getParMatrixIdentifier();
+    response->set_identifier(id);
+    parcsr_A.set_identifier(id);
 
     return Status::OK;
 
@@ -278,6 +308,10 @@ public:
                                    const ::rpc_hypre::RPC_HYPRE_IJMatrix* request,
                                    ::rpc_hypre::Empty* response) override {
 
+    std::cout << "Matrix:" << request->identifier()
+              << " destroy"
+              << std::endl;
+
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
     HYPRE_IJMatrixDestroy(hypreMatrix);
 
@@ -285,6 +319,7 @@ public:
 
   }
 
+  /// ----------------------------------- BOOMER -----------------------------------
 
   /**
    *
@@ -525,19 +560,31 @@ public:
     HYPRE_IJVectorGetObject(x, (void **) &par_x);
     //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ just for testing ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
 
+    ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
     //there are no identifiers < 0
     if ((unsigned)solver.identifier() >= hypreSolversList.size()) {
       return Status::CANCELLED;
     }
-
     HYPRE_Solver hypreSolver = hypreSolversList[solver.identifier()];
 
+    ::rpc_hypre::RPC_HYPRE_ParCSRMatrix parMatrix = request->parcsr_a();
+
+    std::cout << "get ready for setup: " << (unsigned)parMatrix.identifier()
+              << ", " << hypreParMatrixList.size()
+              << ", " << parMatrixList.size() << std::endl;
+
+    if ((unsigned)parMatrix.identifier() >= hypreParMatrixList.size()) {
+      return Status::CANCELLED;
+    }
+    HYPRE_ParCSRMatrix hypreParMatrix = hypreParMatrixList[parMatrix.identifier()];
+
+    std::cout << "setup" << std::endl;
     HYPRE_BoomerAMGSetup(hypreSolver, parcsr_A, par_b, par_x);
 
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv just for testing vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
+    std::cout << "solve" << std::endl;
     HYPRE_BoomerAMGSolve(hypreSolver, parcsr_A, par_b, par_x);
 
     int num_iterations;
@@ -575,14 +622,14 @@ public:
 
     std::cout << "Using solver:" << request->solver().identifier() << std::endl;
 
-    ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
-
-    //there are no identifiers < 0
-    if ((unsigned)solver.identifier() >= hypreSolversList.size()) {
-      return Status::CANCELLED;
-    }
-
-    HYPRE_Solver hypreSolver = hypreSolversList[solver.identifier()];
+//    ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
+//
+//    //there are no identifiers < 0
+//    if ((unsigned)solver.identifier() >= hypreSolversList.size()) {
+//      return Status::CANCELLED;
+//    }
+//
+//    HYPRE_Solver hypreSolver = hypreSolversList[solver.identifier()];
 
 //    HYPRE_BoomerAMGSolve(hypreSolver, parcsr_A, par_b, par_x);
 //

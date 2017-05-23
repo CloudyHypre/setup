@@ -322,12 +322,8 @@ public:
     double h, h2;
 
     Status status;
-    ::rpc_hypre::RPC_HYPRE_IJVector vector;
-
-    HYPRE_IJVector b;
-    HYPRE_ParVector par_b;
-    HYPRE_IJVector x;
-    HYPRE_ParVector par_x;
+    ::rpc_hypre::RPC_HYPRE_IJVector vectorB;
+    ::rpc_hypre::RPC_HYPRE_IJVector vectorX;
 
     /* Default problem parameters */
     n = 33;
@@ -359,11 +355,11 @@ public:
     /// ----------------------------------- CREATE -----------------------------------
 //    HYPRE_IJVectorCreate(MPI_COMM_WORLD, ilower, iupper,&b);
 
-    ::rpc_hypre::RPC_HYPRE_IJVectorCreateMessage createRequest;
-    createRequest.set_jlower(ilower);
-    createRequest.set_jupper(iupper);
+    ::rpc_hypre::RPC_HYPRE_IJVectorCreateMessage createBRequest;
+    createBRequest.set_jlower(ilower);
+    createBRequest.set_jupper(iupper);
 
-    status = stub_->RPC_HYPRE_IJVectorCreate((new ClientContext), createRequest, &vector);
+    status = stub_->RPC_HYPRE_IJVectorCreate((new ClientContext), createBRequest, &vectorB);
     if (!status.ok()) {
       return status;
     }
@@ -371,28 +367,57 @@ public:
     /// ----------------------------------- SET OBJECT -----------------------------------
 //    HYPRE_IJVectorSetObjectType(b, HYPRE_PARCSR);
 
-    ::rpc_hypre::RPC_HYPRE_GenericVectorxIntegerParam* setTypeRequest =
-        new ::rpc_hypre::RPC_HYPRE_GenericVectorxIntegerParam;
-    setTypeRequest->set_value(HYPRE_PARCSR);
-    setTypeRequest->set_allocated_vector(&vector);
-    status = stub_->RPC_HYPRE_IJVectorSetObjectType((new ClientContext), *setTypeRequest, &vector);
+    ::rpc_hypre::RPC_HYPRE_GenericVectorxIntegerParam setBTypeRequest;
+    setBTypeRequest.set_value(HYPRE_PARCSR);
+    setBTypeRequest.set_allocated_vector(&vectorB);
+    status = stub_->RPC_HYPRE_IJVectorSetObjectType((new ClientContext), setBTypeRequest, &vectorB);
+    if (!status.ok()) {
+      return status;
+    }
+
+    //we want to reuse and avoid double free of vector
+    setBTypeRequest.release_vector();
 
         /// ----------------------------------- INIT -----------------------------------
 //    HYPRE_IJVectorInitialize(b);
 
-//    ::rpc_hypre::RPC_HYPRE_IJVector initRequest;
-//    initRequest.set_identifier(vector->)
-
-    status = stub_->RPC_HYPRE_IJVectorInitialize((new ClientContext), vector, &vector);
+    status = stub_->RPC_HYPRE_IJVectorInitialize((new ClientContext), vectorB, &vectorB);
+    if (!status.ok()) {
+      return status;
+    }
 
     /// ----------------------------------- CREATE -----------------------------------
 //    HYPRE_IJVectorCreate(MPI_COMM_WORLD, ilower, iupper,&x);
+    ::rpc_hypre::RPC_HYPRE_IJVectorCreateMessage createXRequest;
+    createXRequest.set_jlower(ilower);
+    createXRequest.set_jupper(iupper);
+
+    status = stub_->RPC_HYPRE_IJVectorCreate((new ClientContext), createXRequest, &vectorX);
+    if (!status.ok()) {
+      return status;
+    }
 
     /// ----------------------------------- SET OBJECT -----------------------------------
 //    HYPRE_IJVectorSetObjectType(x, HYPRE_PARCSR);
+    ::rpc_hypre::RPC_HYPRE_GenericVectorxIntegerParam setXTypeRequest;
+    setXTypeRequest.set_value(HYPRE_PARCSR);
+    setXTypeRequest.set_allocated_vector(&vectorX);
+
+    status = stub_->RPC_HYPRE_IJVectorSetObjectType((new ClientContext), setXTypeRequest, &vectorX);
+    //we want to reuse and avoid double free of vector
+    setXTypeRequest.release_vector();
+
+    if (!status.ok()) {
+      return status;
+    }
+
 
     /// ----------------------------------- INIT -----------------------------------
 //    HYPRE_IJVectorInitialize(x);
+    status = stub_->RPC_HYPRE_IJVectorInitialize((new ClientContext), vectorX, &vectorX);
+    if (!status.ok()) {
+      return status;
+    }
 
     /* Set the rhs values to h^2 and the solution to zero */
     {
@@ -413,8 +438,39 @@ public:
       /// ----------------------------------- SET VAL -----------------------------------
 //      HYPRE_IJVectorSetValues(b, local_size, rows, rhs_values);
 
+      ::rpc_hypre::RPC_HYPRE_IJVectorSetValuesMessage setBValuesRequest;
+      setBValuesRequest.set_allocated_vector(&vectorB);
+      setBValuesRequest.set_nvalues(local_size);
+      for (i=0; i<local_size; i++)
+      {
+        setBValuesRequest.add_indices(rows[i]);
+        setBValuesRequest.add_values(rhs_values[i]);
+      }
+
+      status = stub_->RPC_HYPRE_IJVectorSetValues((new ClientContext), setBValuesRequest, &vectorB);
+      setBValuesRequest.release_vector();
+      if (!status.ok()) {
+        return status;
+      }
+
+
       /// ----------------------------------- SET VAL -----------------------------------
 //      HYPRE_IJVectorSetValues(x, local_size, rows, x_values);
+
+      ::rpc_hypre::RPC_HYPRE_IJVectorSetValuesMessage setXValuesRequest;
+      setXValuesRequest.set_allocated_vector(&vectorX);
+      setXValuesRequest.set_nvalues(local_size);
+      for (i=0; i<local_size; i++)
+      {
+        setXValuesRequest.add_indices(rows[i]);
+        setXValuesRequest.add_values(x_values[i]);
+      }
+
+      status = stub_->RPC_HYPRE_IJVectorSetValues((new ClientContext), setXValuesRequest, &vectorX);
+      setXValuesRequest.release_vector();
+      if (!status.ok()) {
+        return status;
+      }
 
       free(x_values);
       free(rhs_values);
@@ -424,15 +480,41 @@ public:
 
     /// ----------------------------------- ASSEMBLE -----------------------------------
 //    HYPRE_IJVectorAssemble(b);
+    status = stub_->RPC_HYPRE_IJVectorAssemble((new ClientContext), vectorB, &vectorB);
+    if (!status.ok()) {
+      return status;
+    }
 
     /// ----------------------------------- GET OBJ -----------------------------------
 //    HYPRE_IJVectorGetObject(b, (void **) &par_b);
 
+    ::rpc_hypre::RPC_HYPRE_GenericVectorxIntegerParam getBObjRequest;
+    getBObjRequest.set_allocated_vector(&vectorB);
+
+    status = stub_->RPC_HYPRE_IJVectorGetObject((new ClientContext), getBObjRequest, &vectorB);
+    getBObjRequest.release_vector();
+    if (!status.ok()) {
+      return status;
+    }
+
     /// ----------------------------------- ASSEMBLE -----------------------------------
 //    HYPRE_IJVectorAssemble(x);
+    status = stub_->RPC_HYPRE_IJVectorAssemble((new ClientContext), vectorX, &vectorX);
+    if (!status.ok()) {
+      return status;
+    }
 
     /// ----------------------------------- GET OBJ -----------------------------------
 //    HYPRE_IJVectorGetObject(x, (void **) &par_x);
+
+    ::rpc_hypre::RPC_HYPRE_GenericVectorxIntegerParam getXObjRequest;
+    getXObjRequest.set_allocated_vector(&vectorX);
+
+    status = stub_->RPC_HYPRE_IJVectorGetObject((new ClientContext), getXObjRequest, &vectorX);
+    getXObjRequest.release_vector();
+    if (!status.ok()) {
+      return status;
+    }
 
     return Status::OK;
 

@@ -275,24 +275,26 @@ message RPC_HYPRE_ParCSRMatrix {
  */
 message RPC_HYPRE_ParVector {
 
-    //MPI_Comm	 comm;
+    int32 identifier = 1;
 
-    int32 global_size = 1;
-    int32 first_index = 2;
-    int32 last_index = 3;
-    int32 partitioning = 4;
-    int32 actual_local_size = 5; /* stores actual length of data in local vector
-			to allow memory manipulations for temporary vectors*/
-    RPC_HYPRE_Vector local_vector = 6;
-
-    /* Does the Vector create/destroy `data'? */
-    int32 owns_data = 7;
-    int32 owns_partitioning = 8;
-
-    RPC_HYPRE_IJAssumedPart assumed_partition = 9; /* only populated if no_global_partition option
-                                              is used (compile-time option) AND this partition
-                                              needed
-                                              (for setting off-proc elements, for example)*/
+//    //MPI_Comm	 comm;
+//
+//    int32 global_size = 1;
+//    int32 first_index = 2;
+//    int32 last_index = 3;
+//    int32 partitioning = 4;
+//    int32 actual_local_size = 5; /* stores actual length of data in local vector
+//			to allow memory manipulations for temporary vectors*/
+//    RPC_HYPRE_Vector local_vector = 6;
+//
+//    /* Does the Vector create/destroy `data'? */
+//    int32 owns_data = 7;
+//    int32 owns_partitioning = 8;
+//
+//    RPC_HYPRE_IJAssumedPart assumed_partition = 9; /* only populated if no_global_partition option
+//                                              is used (compile-time option) AND this partition
+//                                              needed
+//                                              (for setting off-proc elements, for example)*/
 
 }
 

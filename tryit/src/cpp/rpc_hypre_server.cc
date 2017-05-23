@@ -21,6 +21,8 @@
 #include "../../../hypre/src/HYPRE.h"
 #include "../../../hypre/src/parcsr_ls/HYPRE_parcsr_ls.h"
 #include "../../../hypre/src/examples/vis.c"
+#include "../../../hypre/src/IJ_mv/_hypre_IJ_mv.h"
+#include "../../../hypre/src/parcsr_mv/HYPRE_parcsr_mv.h"
 
 using grpc::Status;
 using grpc::ServerBuilder;
@@ -33,20 +35,19 @@ using namespace ::rpc_hypre;
  */
 class HypreContext {
 
-  ::rpc_hypre::RPC_HYPRE_Solver solver;
+  //some security related stuff could be stored here, too
 
+  ::rpc_hypre::RPC_HYPRE_Solver solver;
   HYPRE_Solver hypreSolver;
 
-  ::rpc_hypre::RPC_HYPRE_IJMatrix matrix;
+  ::rpc_hypre::RPC_HYPRE_IJMatrix matrixMessageObject;
+  HYPRE_IJMatrix hypreIJMatrix;
+  HYPRE_ParCSRMatrix parcsr_A;
 
-  HYPRE_IJMatrix hypreMatrix;
-
-//  HYPRE_ParCSRMatrix parcsr_A;
-  std::vector<HYPRE_ParCSRMatrix> matrices;
-
-//  HYPRE_ParVector par_b;
-//  HYPRE_ParVector par_x;
-  std::vector<HYPRE_ParVector> vectors;
+  ::rpc_hypre::RPC_HYPRE_IJVector vectorMessageObject;
+  HYPRE_IJVector hypreIJVector;
+  HYPRE_ParVector par_b;
+  HYPRE_ParVector par_x;
 
 };
 
@@ -65,9 +66,13 @@ protected:
 
   std::vector<::rpc_hypre::RPC_HYPRE_IJMatrix> matrixList;
   std::vector<HYPRE_IJMatrix> hypreMatrixList;
-
   std::vector<::rpc_hypre::RPC_HYPRE_ParCSRMatrix> parMatrixList;
   std::vector<HYPRE_ParCSRMatrix> hypreParMatrixList;
+
+  std::vector<::rpc_hypre::RPC_HYPRE_IJVector> vectorList;
+  std::vector<HYPRE_IJVector> hypreVectorList;
+  std::vector<::rpc_hypre::RPC_HYPRE_ParVector> parVectorList;
+  std::vector<HYPRE_ParVector> hypreParVectorList;
 
   /**
    * @return int
@@ -93,6 +98,18 @@ protected:
   int getParMatrixIdentifier() {
 
     return hypreParMatrixList.size()-1;
+
+  }
+
+  int getVectorIdentifier() {
+
+    return hypreVectorList.size()-1;
+
+  }
+
+  int getParVectorIdentifier() {
+
+    return hypreParVectorList.size()-1;
 
   }
 
@@ -165,7 +182,6 @@ public:
 
     //get the id
     matrix->set_identifier(id);
-
     return Status::OK;
 
   }
@@ -189,7 +205,6 @@ public:
     HYPRE_IJMatrixSetObjectType(hypreMatrix, request->value());
 
     response->set_identifier(request->matrix().identifier());
-
     return Status::OK;
 
   }
@@ -212,6 +227,7 @@ public:
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
     HYPRE_IJMatrixInitialize(hypreMatrix);
 
+    response->set_identifier(request->identifier());
     return Status::OK;
 
   }
@@ -228,7 +244,6 @@ public:
                                      ::rpc_hypre::RPC_HYPRE_IJMatrix* response) override {
 
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->matrix().identifier()];
-
     HYPRE_IJMatrixSetValues(
         hypreMatrix,
         request->nrows(),
@@ -238,6 +253,7 @@ public:
         repeatedToArray(request->values_size(), request->values())
     );
 
+    response->set_identifier(request->matrix().identifier());
     return Status::OK;
 
   }
@@ -260,6 +276,7 @@ public:
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->identifier()];
     HYPRE_IJMatrixAssemble(hypreMatrix);
 
+    response->set_identifier(request->identifier());
     return Status::OK;
 
   }
@@ -280,19 +297,16 @@ public:
               << std::endl;
 
     HYPRE_IJMatrix hypreMatrix = hypreMatrixList[request->matrix().identifier()];
-
     RPC_HYPRE_ParCSRMatrix parcsr_A;
     HYPRE_ParCSRMatrix hypreParcsr_A;
 
     HYPRE_IJMatrixGetObject(hypreMatrix, (void**) &hypreParcsr_A);
-
     parMatrixList.push_back(parcsr_A);
     hypreParMatrixList.push_back(hypreParcsr_A);
 
     int id = getParMatrixIdentifier();
-    response->set_identifier(id);
     parcsr_A.set_identifier(id);
-
+    response->set_identifier(id);
     return Status::OK;
 
   }
@@ -318,6 +332,152 @@ public:
     return Status::OK;
 
   }
+
+  /// ----------------------------------- VECTOR -----------------------------------
+
+  /**
+   * @param context
+   * @param request
+   * @param vector
+   * @return Status
+   */
+  Status RPC_HYPRE_IJVectorCreate(::grpc::ServerContext* context,
+                                  const ::rpc_hypre::RPC_HYPRE_IJVectorCreateMessage* request,
+                                  ::rpc_hypre::RPC_HYPRE_IJVector* vector) override {
+
+    HYPRE_IJVector hypreVector;
+    HYPRE_IJVectorCreate(MPI_COMM_WORLD, request->jlower(), request->jupper(), &hypreVector);
+
+    vectorList.push_back(*vector);
+    hypreVectorList.push_back(hypreVector);
+
+    int id = getVectorIdentifier();
+    std::cout << "Created Vector: " << id << std::endl;
+
+    vector->set_identifier(id);
+    return Status::OK;
+
+  }
+
+  /**
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
+  Status RPC_HYPRE_IJVectorSetObjectType(::grpc::ServerContext* context,
+                                         const ::rpc_hypre::RPC_HYPRE_GenericVectorxIntegerParam* request,
+                                         ::rpc_hypre::RPC_HYPRE_IJVector* response) override {
+
+    HYPRE_IJVector hypreIjVector = hypreVectorList[request->vector().identifier()];
+    HYPRE_IJVectorSetObjectType(hypreIjVector, request->value());
+
+    response->set_identifier(request->vector().identifier());
+    return Status::OK;
+
+  }
+
+  /**
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
+  Status RPC_HYPRE_IJVectorInitialize(::grpc::ServerContext* context,
+                                      const ::rpc_hypre::RPC_HYPRE_IJVector* request,
+                                      ::rpc_hypre::RPC_HYPRE_IJVector* response) override {
+
+    HYPRE_IJVector hypreIjVector = hypreVectorList[request->identifier()];
+    HYPRE_IJVectorInitialize(hypreIjVector);
+
+    response->set_identifier(request->identifier());
+    return Status::OK;
+
+  }
+
+  /**
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
+  Status RPC_HYPRE_IJVectorSetValues(::grpc::ServerContext* context,
+                                     const ::rpc_hypre::RPC_HYPRE_IJVectorSetValuesMessage* request,
+                                     ::rpc_hypre::RPC_HYPRE_IJVector* response) override {
+
+    HYPRE_IJVector hypreIjVector = hypreVectorList[request->vector().identifier()];
+    HYPRE_IJVectorSetValues(
+        hypreIjVector,
+        request->nvalues(),
+        repeatedToArray(request->indices_size(), request->indices()),
+        repeatedToArray(request->values_size(), request->values())
+    );
+
+    response->set_identifier(request->vector().identifier());
+    return Status::OK;
+
+  }
+
+  /**
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
+  Status RPC_HYPRE_IJVectorAssemble(::grpc::ServerContext* context,
+                                    const ::rpc_hypre::RPC_HYPRE_IJVector* request,
+                                    ::rpc_hypre::RPC_HYPRE_IJVector* response) override {
+
+    HYPRE_IJVector hypreIjVector = hypreVectorList[request->identifier()];
+    HYPRE_IJVectorAssemble(hypreIjVector);
+
+    response->set_identifier(request->identifier());
+    return Status::OK;
+
+  }
+
+  /**
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
+  Status RPC_HYPRE_IJVectorGetObject(::grpc::ServerContext* context,
+                                     const ::rpc_hypre::RPC_HYPRE_GenericVectorxIntegerParam* request,
+                                     ::rpc_hypre::RPC_HYPRE_IJVector* response) override {
+
+    HYPRE_IJVector hypreIjVector = hypreVectorList[request->vector().identifier()];
+    RPC_HYPRE_ParVector parVector;
+    HYPRE_ParVector hypreParVector;
+
+    HYPRE_IJVectorGetObject(hypreIjVector, (void**) &hypreParVector);
+    parVectorList.push_back(parVector);
+    hypreParVectorList.push_back(hypreParVector);
+
+    int id = getParVectorIdentifier();
+    parVector.set_identifier(id);
+    response->set_identifier(id);
+    return Status::OK;
+
+  }
+
+  /**
+   * @param context
+   * @param request
+   * @param response
+   * @return Status
+   */
+  Status RPC_HYPRE_IJVectorDestroy(::grpc::ServerContext* context,
+                                   const ::rpc_hypre::RPC_HYPRE_IJVector* request,
+                                   ::rpc_hypre::Empty* response) override {
+
+    HYPRE_IJVector hypreIjVector = hypreVectorList[request->identifier()];
+    HYPRE_IJVectorDestroy(hypreIjVector);
+
+    return Status::OK;
+
+  }
+
 
   /// ----------------------------------- BOOMER -----------------------------------
 
@@ -382,8 +542,6 @@ public:
 
     double h, h2;
 
-    HYPRE_IJMatrix A;
-    HYPRE_ParCSRMatrix parcsr_A;
     HYPRE_IJVector b;
     HYPRE_ParVector par_b;
     HYPRE_IJVector x;
@@ -397,6 +555,9 @@ public:
     N = n*n; /* global number of rows */
     h = 1.0/(n+1); /* mesh size*/
     h2 = h*h;
+
+    std::cout << "myid: " << myid << std::endl;
+    std::cout << "num_procs: " << num_procs << std::endl;
 
     std::cout << "global number of rows: " << N << std::endl;
     std::cout << "mesh size: " << h << std::endl;
@@ -419,98 +580,6 @@ public:
 
     /* How many rows do I have? */
     local_size = iupper - ilower + 1;
-
-    HYPRE_IJMatrixCreate(MPI_COMM_WORLD, ilower, iupper, ilower, iupper, &A);
-
-    /* Choose a parallel csr format storage (see the User's Manual) */
-    HYPRE_IJMatrixSetObjectType(A, HYPRE_PARCSR);
-
-    /* Initialize before setting coefficients */
-    HYPRE_IJMatrixInitialize(A);
-
-    /* Now go through my local rows and set the matrix entries.
-       Each row has at most 5 entries. For example, if n=3:
-
-       A = [M -I 0; -I M -I; 0 -I M]
-       M = [4 -1 0; -1 4 -1; 0 -1 4]
-
-       Note that here we are setting one row at a time, though
-       one could set all the rows together (see the User's Manual).
-    */
-    {
-      int nnz;
-      double values[5];
-      int cols[5];
-
-      std::cout << "ilower: " << ilower << std::endl;
-      std::cout << "iupper: " << iupper << std::endl;
-
-      for (i = ilower; i <= iupper; i++)
-      {
-        nnz = 0;
-
-        /* The left identity block:position i-n */
-        if ((i-n)>=0)
-        {
-          cols[nnz] = i-n;
-          values[nnz] = -1.0;
-          nnz++;
-        }
-
-        /* The left -1: position i-1 */
-        if (i%n)
-        {
-          cols[nnz] = i-1;
-          values[nnz] = -1.0;
-          nnz++;
-        }
-
-        /* Set the diagonal: position i */
-        cols[nnz] = i;
-        values[nnz] = 4.0;
-        nnz++;
-
-        /* The right -1: position i+1 */
-        if ((i+1)%n)
-        {
-          cols[nnz] = i+1;
-          values[nnz] = -1.0;
-          nnz++;
-        }
-
-        /* The right identity block:position i+n */
-        if ((i+n)< N)
-        {
-          cols[nnz] = i+n;
-          values[nnz] = -1.0;
-          nnz++;
-        }
-
-        /* Set the values for row i */
-        HYPRE_IJMatrixSetValues(A, 1, &nnz, &i, cols, values);
-      }
-    }
-
-    /* Assemble after setting the coefficients */
-    HYPRE_IJMatrixAssemble(A);
-
-    /* Note: for the testing of small problems, one may wish to read
-       in a matrix in IJ format (for the format, see the output files
-       from the -print_system option).
-       In this case, one would use the following routine:
-       HYPRE_IJMatrixRead( <filename>, MPI_COMM_WORLD,
-                           HYPRE_PARCSR, &A );
-       <filename>  = IJ.A.out to read in what has been printed out
-       by -print_system (processor numbers are omitted).
-       A call to HYPRE_IJMatrixRead is an *alternative* to the
-       following sequence of HYPRE_IJMatrix calls:
-       Create, SetObjectType, Initialize, SetValues, and Assemble
-    */
-
-
-    /* Get the parcsr matrix object to use */
-    HYPRE_IJMatrixGetObject(A, (void**) &parcsr_A);
-
 
     /* Create the rhs and solution */
     HYPRE_IJVectorCreate(MPI_COMM_WORLD, ilower, iupper,&b);
@@ -580,12 +649,14 @@ public:
     HYPRE_ParCSRMatrix hypreParMatrix = hypreParMatrixList[parMatrix.identifier()];
 
     std::cout << "setup" << std::endl;
-    HYPRE_BoomerAMGSetup(hypreSolver, parcsr_A, par_b, par_x);
+    HYPRE_BoomerAMGSetup(hypreSolver, hypreParMatrix, par_b, par_x);
+//    HYPRE_BoomerAMGSetup(hypreSolver, parcsr_A, par_b, par_x);
 
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv just for testing vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
     std::cout << "solve" << std::endl;
-    HYPRE_BoomerAMGSolve(hypreSolver, parcsr_A, par_b, par_x);
+    HYPRE_BoomerAMGSolve(hypreSolver, hypreParMatrix, par_b, par_x);
+//    HYPRE_BoomerAMGSolve(hypreSolver, parcsr_A, par_b, par_x);
 
     int num_iterations;
     double final_res_norm;

@@ -104,6 +104,8 @@ public:
 
     solver->set_identifier(solverIdentifier);
     parMatrix->set_identifier(matrixIdentifier);
+    par_b->set_identifier(vectorBIdentifier);
+    par_x->set_identifier(vectorXIdentifier);
 
     request->set_allocated_solver(solver);
     request->set_allocated_parcsr_a(parMatrix);

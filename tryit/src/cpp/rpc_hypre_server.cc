@@ -559,31 +559,6 @@ public:
 
     std::cout << "setup" << std::endl;
     HYPRE_BoomerAMGSetup(hypreSolver, hypreParMatrix, hypreParVectorB, hypreParVectorX);
-//    HYPRE_BoomerAMGSetup(hypreSolver, parcsr_A, par_b, par_x);
-
-    //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv just for testing vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-
-    std::cout << "solve" << std::endl;
-    HYPRE_BoomerAMGSolve(hypreSolver, hypreParMatrix, hypreParVectorB, hypreParVectorX);
-//    HYPRE_BoomerAMGSolve(hypreSolver, parcsr_A, par_b, par_x);
-
-    int num_iterations;
-    double final_res_norm;
-
-    /* Run info - needed logging turned on */
-    HYPRE_BoomerAMGGetNumIterations(hypreSolver, &num_iterations);
-    HYPRE_BoomerAMGGetFinalRelativeResidualNorm(hypreSolver, &final_res_norm);
-
-    if (myid == 0)
-    {
-      printf("\n");
-      printf("Iterations = %d\n", num_iterations);
-      printf("Final Relative Residual Norm = %e\n", final_res_norm);
-      printf("\n");
-    }
-
-    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ just for testing ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
     std::cout << "Finished running RPC_HYPRE_BoomerAMGSetup()." << std::endl;
 
     return Status::OK;
@@ -600,33 +575,52 @@ public:
                                   const ::rpc_hypre::RPC_HYPRE_BoomerAMGSolveMessage* request,
                                   ::rpc_hypre::RPC_HYPRE_ParVector* response) {
 
-    std::cout << "Using solver:" << request->solver().identifier() << std::endl;
+    ///solver
+    ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
+    //there are no identifiers < 0
+    if ((unsigned)solver.identifier() >= hypreSolversList.size()) {
+      return Status::CANCELLED;
+    }
+    HYPRE_Solver hypreSolver = hypreSolversList[solver.identifier()];
 
-//    ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
-//
-//    //there are no identifiers < 0
-//    if ((unsigned)solver.identifier() >= hypreSolversList.size()) {
-//      return Status::CANCELLED;
-//    }
-//
-//    HYPRE_Solver hypreSolver = hypreSolversList[solver.identifier()];
+    ///matrix
+    ::rpc_hypre::RPC_HYPRE_ParCSRMatrix parMatrix = request->parcsr_a();
+    if ((unsigned)parMatrix.identifier() >= hypreParMatrixList.size()) {
+      return Status::CANCELLED;
+    }
+    HYPRE_ParCSRMatrix hypreParMatrix = hypreParMatrixList[parMatrix.identifier()];
 
-//    HYPRE_BoomerAMGSolve(hypreSolver, parcsr_A, par_b, par_x);
-//
-//    int num_iterations;
-//    double final_res_norm;
-//
-//    /* Run info - needed logging turned on */
-//    HYPRE_BoomerAMGGetNumIterations(hypreSolver, &num_iterations);
-//    HYPRE_BoomerAMGGetFinalRelativeResidualNorm(hypreSolver, &final_res_norm);
-//
-//    if (myid == 0)
-//    {
-//      printf("\n");
-//      printf("Iterations = %d\n", num_iterations);
-//      printf("Final Relative Residual Norm = %e\n", final_res_norm);
-//      printf("\n");
-//    }
+    ///vector b
+    ::rpc_hypre::RPC_HYPRE_ParVector parVectorB = request->par_b();
+    if ((unsigned)parVectorB.identifier() >= hypreParVectorList.size()) {
+      return Status::CANCELLED;
+    }
+    HYPRE_ParVector hypreParVectorB = hypreParVectorList[parVectorB.identifier()];
+
+    ///vector x
+    ::rpc_hypre::RPC_HYPRE_ParVector parVectorX = request->par_x();
+    if ((unsigned)parVectorX.identifier() >= hypreParVectorList.size()) {
+      return Status::CANCELLED;
+    }
+    HYPRE_ParVector hypreParVectorX = hypreParVectorList[parVectorX.identifier()];
+
+    std::cout << "solve" << std::endl;
+    HYPRE_BoomerAMGSolve(hypreSolver, hypreParMatrix, hypreParVectorB, hypreParVectorX);
+
+    int num_iterations;
+    double final_res_norm;
+
+    /* Run info - needed logging turned on */
+    HYPRE_BoomerAMGGetNumIterations(hypreSolver, &num_iterations);
+    HYPRE_BoomerAMGGetFinalRelativeResidualNorm(hypreSolver, &final_res_norm);
+
+    if (myid == 0)
+    {
+      printf("\n");
+      printf("Iterations = %d\n", num_iterations);
+      printf("Final Relative Residual Norm = %e\n", final_res_norm);
+      printf("\n");
+    }
 
     return Status::OK;
 

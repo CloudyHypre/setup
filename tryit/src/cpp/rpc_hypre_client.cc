@@ -75,6 +75,8 @@ public:
     rpc_hypre::RPC_HYPRE_Solver* solverMessage = new rpc_hypre::RPC_HYPRE_Solver;
     solverMessage->set_identifier(solverIdentifier);
     matrixA->set_identifier(matrixIdentifier);
+    par_b->set_identifier(vectorBIdentifier);
+    par_x->set_identifier(vectorXIdentifier);
 
     rpc_hypre::RPC_HYPRE_BoomerAMGSolveMessage request;
     request.set_allocated_solver(solverMessage);

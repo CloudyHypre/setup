@@ -33,6 +33,8 @@ protected:
 
   int solverIdentifier;
   int matrixIdentifier;
+  int vectorBIdentifier;
+  int vectorXIdentifier;
 
 public:
 
@@ -515,6 +517,9 @@ public:
     if (!status.ok()) {
       return status;
     }
+
+    vectorBIdentifier = vectorB.identifier();
+    vectorXIdentifier = vectorX.identifier();
 
     return Status::OK;
 

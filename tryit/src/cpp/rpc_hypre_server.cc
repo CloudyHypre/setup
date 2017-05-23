@@ -455,6 +455,8 @@ public:
     hypreParVectorList.push_back(hypreParVector);
 
     int id = getParVectorIdentifier();
+    std::cout << "par vector created: " << id << std::endl;
+
     parVector.set_identifier(id);
     response->set_identifier(id);
     return Status::OK;
@@ -530,106 +532,106 @@ public:
 //    ::rpc_hypre::RPC_HYPRE_ParVector* par_x = request->mutable_par_x();
 //    ::rpc_hypre::RPC_HYPRE_ParCSRMatrix* parcsr_A = request->mutable_parcsr_a();
 
-    //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv just for testing vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-    int i;
-    int N, n;
+//    //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv just for testing vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+//    int i;
+//    int N, n;
+//
+//    int ilower, iupper;
+//    int local_size, extra;
+//
+////    int solver_id;
+////    int print_system;
+//
+//    double h, h2;
+//
+//    HYPRE_IJVector b;
+//    HYPRE_ParVector par_b;
+//    HYPRE_IJVector x;
+//    HYPRE_ParVector par_x;
+//
+//    /* Default problem parameters */
+//    n = 33;
+//
+//    /* Preliminaries: want at least one processor per row */
+//    if (n*n < num_procs) n = sqrt(num_procs) + 1;
+//    N = n*n; /* global number of rows */
+//    h = 1.0/(n+1); /* mesh size*/
+//    h2 = h*h;
+//
+//    std::cout << "myid: " << myid << std::endl;
+//    std::cout << "num_procs: " << num_procs << std::endl;
+//
+//    std::cout << "global number of rows: " << N << std::endl;
+//    std::cout << "mesh size: " << h << std::endl;
+//
+//    /* Each processor knows only of its own rows - the range is denoted by ilower
+//       and upper.  Here we partition the rows. We account for the fact that
+//       N may not divide evenly by the number of processors. */
+//    local_size = N/num_procs;
+//    extra = N - local_size*num_procs;
+//
+//    std::cout << "num procs: " << num_procs << std::endl;
+//    std::cout << "local size: " << local_size << std::endl;
+//
+//    ilower = local_size*myid;
+//    ilower += hypre_min(myid, extra);
+//
+//    iupper = local_size*(myid+1);
+//    iupper += hypre_min(myid+1, extra);
+//    iupper = iupper - 1;
+//
+//    /* How many rows do I have? */
+//    local_size = iupper - ilower + 1;
+//
+//    /* Create the rhs and solution */
+//    HYPRE_IJVectorCreate(MPI_COMM_WORLD, ilower, iupper,&b);
+//    HYPRE_IJVectorSetObjectType(b, HYPRE_PARCSR);
+//    HYPRE_IJVectorInitialize(b);
+//
+//    HYPRE_IJVectorCreate(MPI_COMM_WORLD, ilower, iupper,&x);
+//    HYPRE_IJVectorSetObjectType(x, HYPRE_PARCSR);
+//    HYPRE_IJVectorInitialize(x);
+//
+//    /* Set the rhs values to h^2 and the solution to zero */
+//    {
+//      double *rhs_values, *x_values;
+//      int    *rows;
+//
+//      rhs_values =  (double*) calloc(local_size, sizeof(double));
+//      x_values =  (double*) calloc(local_size, sizeof(double));
+//      rows = (int*) calloc(local_size, sizeof(int));
+//
+//      for (i=0; i<local_size; i++)
+//      {
+//        rhs_values[i] = h2;
+//        x_values[i] = 0.0;
+//        rows[i] = ilower + i;
+//      }
+//
+//      HYPRE_IJVectorSetValues(b, local_size, rows, rhs_values);
+//      HYPRE_IJVectorSetValues(x, local_size, rows, x_values);
+//
+//      free(x_values);
+//      free(rhs_values);
+//      free(rows);
+//    }
+//
+//
+//    HYPRE_IJVectorAssemble(b);
+//    /*  As with the matrix, for testing purposes, one may wish to read in a rhs:
+//        HYPRE_IJVectorRead( <filename>, MPI_COMM_WORLD,
+//                                  HYPRE_PARCSR, &b );
+//        as an alternative to the
+//        following sequence of HYPRE_IJVectors calls:
+//        Create, SetObjectType, Initialize, SetValues, and Assemble
+//    */
+//    HYPRE_IJVectorGetObject(b, (void **) &par_b);
+//
+//    HYPRE_IJVectorAssemble(x);
+//    HYPRE_IJVectorGetObject(x, (void **) &par_x);
+//    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ just for testing ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    int ilower, iupper;
-    int local_size, extra;
-
-//    int solver_id;
-//    int print_system;
-
-    double h, h2;
-
-    HYPRE_IJVector b;
-    HYPRE_ParVector par_b;
-    HYPRE_IJVector x;
-    HYPRE_ParVector par_x;
-
-    /* Default problem parameters */
-    n = 33;
-
-    /* Preliminaries: want at least one processor per row */
-    if (n*n < num_procs) n = sqrt(num_procs) + 1;
-    N = n*n; /* global number of rows */
-    h = 1.0/(n+1); /* mesh size*/
-    h2 = h*h;
-
-    std::cout << "myid: " << myid << std::endl;
-    std::cout << "num_procs: " << num_procs << std::endl;
-
-    std::cout << "global number of rows: " << N << std::endl;
-    std::cout << "mesh size: " << h << std::endl;
-
-    /* Each processor knows only of its own rows - the range is denoted by ilower
-       and upper.  Here we partition the rows. We account for the fact that
-       N may not divide evenly by the number of processors. */
-    local_size = N/num_procs;
-    extra = N - local_size*num_procs;
-
-    std::cout << "num procs: " << num_procs << std::endl;
-    std::cout << "local size: " << local_size << std::endl;
-
-    ilower = local_size*myid;
-    ilower += hypre_min(myid, extra);
-
-    iupper = local_size*(myid+1);
-    iupper += hypre_min(myid+1, extra);
-    iupper = iupper - 1;
-
-    /* How many rows do I have? */
-    local_size = iupper - ilower + 1;
-
-    /* Create the rhs and solution */
-    HYPRE_IJVectorCreate(MPI_COMM_WORLD, ilower, iupper,&b);
-    HYPRE_IJVectorSetObjectType(b, HYPRE_PARCSR);
-    HYPRE_IJVectorInitialize(b);
-
-    HYPRE_IJVectorCreate(MPI_COMM_WORLD, ilower, iupper,&x);
-    HYPRE_IJVectorSetObjectType(x, HYPRE_PARCSR);
-    HYPRE_IJVectorInitialize(x);
-
-    /* Set the rhs values to h^2 and the solution to zero */
-    {
-      double *rhs_values, *x_values;
-      int    *rows;
-
-      rhs_values =  (double*) calloc(local_size, sizeof(double));
-      x_values =  (double*) calloc(local_size, sizeof(double));
-      rows = (int*) calloc(local_size, sizeof(int));
-
-      for (i=0; i<local_size; i++)
-      {
-        rhs_values[i] = h2;
-        x_values[i] = 0.0;
-        rows[i] = ilower + i;
-      }
-
-      HYPRE_IJVectorSetValues(b, local_size, rows, rhs_values);
-      HYPRE_IJVectorSetValues(x, local_size, rows, x_values);
-
-      free(x_values);
-      free(rhs_values);
-      free(rows);
-    }
-
-
-    HYPRE_IJVectorAssemble(b);
-    /*  As with the matrix, for testing purposes, one may wish to read in a rhs:
-        HYPRE_IJVectorRead( <filename>, MPI_COMM_WORLD,
-                                  HYPRE_PARCSR, &b );
-        as an alternative to the
-        following sequence of HYPRE_IJVectors calls:
-        Create, SetObjectType, Initialize, SetValues, and Assemble
-    */
-    HYPRE_IJVectorGetObject(b, (void **) &par_b);
-
-    HYPRE_IJVectorAssemble(x);
-    HYPRE_IJVectorGetObject(x, (void **) &par_x);
-    //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ just for testing ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
+    ///solver
     ::rpc_hypre::RPC_HYPRE_Solver solver = request->solver();
     //there are no identifiers < 0
     if ((unsigned)solver.identifier() >= hypreSolversList.size()) {
@@ -637,25 +639,35 @@ public:
     }
     HYPRE_Solver hypreSolver = hypreSolversList[solver.identifier()];
 
+    ///matrix
     ::rpc_hypre::RPC_HYPRE_ParCSRMatrix parMatrix = request->parcsr_a();
-
-    std::cout << "get ready for setup: " << (unsigned)parMatrix.identifier()
-              << ", " << hypreParMatrixList.size()
-              << ", " << parMatrixList.size() << std::endl;
-
     if ((unsigned)parMatrix.identifier() >= hypreParMatrixList.size()) {
       return Status::CANCELLED;
     }
     HYPRE_ParCSRMatrix hypreParMatrix = hypreParMatrixList[parMatrix.identifier()];
 
+    ///vector b
+    ::rpc_hypre::RPC_HYPRE_ParVector parVectorB = request->par_b();
+    if ((unsigned)parVectorB.identifier() >= hypreParVectorList.size()) {
+      return Status::CANCELLED;
+    }
+    HYPRE_ParVector hypreParVectorB = hypreParVectorList[parVectorB.identifier()];
+
+    ///vector x
+    ::rpc_hypre::RPC_HYPRE_ParVector parVectorX = request->par_x();
+    if ((unsigned)parVectorX.identifier() >= hypreParVectorList.size()) {
+      return Status::CANCELLED;
+    }
+    HYPRE_ParVector hypreParVectorX = hypreParVectorList[parVectorX.identifier()];
+
     std::cout << "setup" << std::endl;
-    HYPRE_BoomerAMGSetup(hypreSolver, hypreParMatrix, par_b, par_x);
+    HYPRE_BoomerAMGSetup(hypreSolver, hypreParMatrix, hypreParVectorB, hypreParVectorX);
 //    HYPRE_BoomerAMGSetup(hypreSolver, parcsr_A, par_b, par_x);
 
     //vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv just for testing vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
     std::cout << "solve" << std::endl;
-    HYPRE_BoomerAMGSolve(hypreSolver, hypreParMatrix, par_b, par_x);
+    HYPRE_BoomerAMGSolve(hypreSolver, hypreParMatrix, hypreParVectorB, hypreParVectorX);
 //    HYPRE_BoomerAMGSolve(hypreSolver, parcsr_A, par_b, par_x);
 
     int num_iterations;
